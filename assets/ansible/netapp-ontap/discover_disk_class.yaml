@@ -1,0 +1,53 @@
+---
+- name: Discover the ONTAP disk class
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Get the disk class information
+      netapp.ontap.na_ontap_rest_info:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        use_rest: always
+        use_python_keys: true
+        gather_subset:
+          - storage/disks
+        fields:
+          - class
+      register: disk_info
+      no_log: true
+
+    - name: Collect the disk classes returned by the cluster
+      ansible.builtin.set_fact:
+        disk_classes: >-
+          {{
+            disk_info.ontap_info.storage_disks.records
+            | default([])
+            | selectattr('class', 'defined')
+            | map(attribute='class')
+            | reject('equalto', '')
+            | unique
+            | list
+          }}
+
+    - name: Validate one cluster-wide disk class
+      ansible.builtin.assert:
+        that:
+          - disk_info.ontap_info.storage_disks.records | default([]) | length > 0
+          - disk_classes | length == 1
+        fail_msg: >-
+          Aggregate creation needs one cluster-wide disk class.
+          The cluster returned: {{ disk_classes | join(', ') | default('none', true) }}.
+
+    - name: Print the disk class
+      ansible.builtin.debug:
+        msg: "{{ disk_classes[0] }}"
+
+    - name: Export the disk class
+      torque.collections.export_torque_outputs:
+        outputs:
+          disk_class: "{{ disk_classes[0] }}"
