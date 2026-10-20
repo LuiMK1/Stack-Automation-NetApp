@@ -100,19 +100,11 @@ customization:
               - name: cluster_location
               - name: time_zone
               - name: cluster_login_banner
-          - name: Service processor and data ports. To skip a table, delete every row. A blank row keeps Finish disabled.
+          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. A blank row keeps Finish disabled.
             inputs:
-              - name: sp_interfaces
+              - name: node_specs
                 type: object
-                header: Node Name,SP IP,Netmask,Gateway
-              - name: data_ports
-                type: object
-                header: Node Name,Data Ports
-          - name: Data aggregates. To skip a table, delete every row. A blank row keeps Finish disabled.
-            inputs:
-              - name: aggregates
-                type: object
-                header: Node Name,Aggregate Name,Disk Count
+                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
@@ -172,26 +164,14 @@ inputs:
     type: string
     default: ""
     description: Location string stored on the cluster.
-  sp_interfaces:
+  node_specs:
     type: string
     default: "[]"
     description: >-
-      To skip this task, delete every row in this table. A blank row keeps Finish disabled.
-      One row per node with Node Name, service-processor IP, Netmask, and Gateway.
-  aggregates:
-    type: string
-    default: "[]"
-    description: >-
-      To skip this task, delete every row in this table. A blank row keeps Finish disabled.
-      One row per aggregate with Node Name, Aggregate Name, and Disk Count.
-  data_ports:
-    type: string
-    default: "[]"
-    description: >-
-      To skip this task, delete every row in this table. A blank row keeps Finish disabled.
-      One row per node. Data Ports is a comma-separated list of ports used for
-      data traffic, for example e0e,e0f. Flow control is disabled only on these
-      ports.
+      One row per node. The node name is entered once and applies to that node's
+      service processor, data ports, and one aggregate. Data Ports is a
+      comma-separated list, for example e5a,e5b. To skip service-processor,
+      aggregate, and data-port tasks, delete every row. A blank row keeps Finish disabled.
   dns_domain_name:
     type: string
     default: ""
@@ -342,7 +322,7 @@ grains:
 
   configure_sp_network:
     kind: ansible
-    when: '{% if .inputs.sp_interfaces != "" and .inputs.sp_interfaces != "[]" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -353,11 +333,11 @@ grains:
         - ontap_hostname: '{{ .inputs.ontap_hostname }}'
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
-        - sp_interfaces: '{{ .inputs.sp_interfaces }}'
+        - node_specs: '{{ .inputs.node_specs }}'
 
   discover_disk_class:
     kind: ansible
-    when: '{% if .inputs.aggregates != "" and .inputs.aggregates != "[]" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -368,12 +348,13 @@ grains:
         - ontap_hostname: '{{ .inputs.ontap_hostname }}'
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
+        - node_specs: '{{ .inputs.node_specs }}'
       outputs:
         - disk_class
 
   create_data_aggregates:
     kind: ansible
-    when: '{% if .inputs.aggregates != "" and .inputs.aggregates != "[]" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
     depends-on: discover_disk_class
     spec:
       source:
@@ -385,7 +366,7 @@ grains:
         - ontap_hostname: '{{ .inputs.ontap_hostname }}'
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
-        - aggregates: '{{ .inputs.aggregates }}'
+        - node_specs: '{{ .inputs.node_specs }}'
         - disk_class: '{{ .grains.discover_disk_class.outputs.disk_class }}'
       outputs:
         - aggregate_status
@@ -418,7 +399,7 @@ grains:
 
   disable_flow_control:
     kind: ansible
-    when: '{% if .inputs.data_ports != "" and .inputs.data_ports != "[]" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -429,7 +410,7 @@ grains:
         - ontap_hostname: '{{ .inputs.ontap_hostname }}'
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
-        - data_ports: '{{ .inputs.data_ports }}'
+        - node_specs: '{{ .inputs.node_specs }}'
 
   enable_cdp:
     kind: ansible
