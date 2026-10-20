@@ -71,16 +71,21 @@
         msg: No service-processor values were provided, so this step made no change.
       when: sp_plan | default([]) | length == 0
 
+    # na_ontap_service_processor_network omits the IPv4 enabled flag on REST.
+    # ONTAP then returns error 13631591. The CLI sets that flag explicitly.
     - name: Set the service-processor network interface
-      netapp.ontap.na_ontap_service_processor_network:
-        state: present
-        ip_address: "{{ item.ip }}"
-        netmask: "{{ item.mask }}"
-        gateway_ip_address: "{{ item.gateway }}"
-        node: "{{ item.node_name }}"
-        is_enabled: true
-        address_type: ipv4
-        dhcp: none
+      netapp.ontap.na_ontap_rest_cli:
+        command: system/service-processor/network
+        verb: PATCH
+        params:
+          node: "{{ item.node_name }}"
+          address-family: IPv4
+        body:
+          enable: "true"
+          dhcp: none
+          ip-address: "{{ item.ip }}"
+          netmask: "{{ item.mask }}"
+          gateway: "{{ item.gateway }}"
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
