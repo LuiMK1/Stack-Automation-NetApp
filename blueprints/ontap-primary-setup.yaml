@@ -235,9 +235,8 @@ inputs:
     description: Optional SNMP trap host. Leave empty to skip. Applied only when FIPS is not enabled.
   snmp_community:
     type: string
-    sensitive: true
     default: ""
-    description: Optional SNMPv1/v2c community. Leave empty to skip. Applied only when FIPS is not enabled.
+    description: Optional SNMPv1/v2c community name. Leave empty to skip. Applied only when FIPS is not enabled.
   snmp_v3_user:
     type: string
     default: ""
