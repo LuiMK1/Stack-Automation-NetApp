@@ -18,5 +18,5 @@ Node configuration is one table. Each row is one node, so the node name is enter
 | AutoSupport mail settings | Configure AutoSupport on the nodes discovered from the cluster |
 | Legacy license keys or NLF contents | Add licenses |
 | `true` or `false` in the FIPS dropdown | Set SSL FIPS mode. Leave the dropdown blank to leave cluster FIPS unchanged |
-| SNMP contact, location, SNMPv3 user, and the passwords for the selected protocols | Configure and enable SNMP. The protocol dropdown shows only the values allowed for the selected FIPS mode. A password is not required when that protocol is `none`. Community and traphost are optional and are applied only when FIPS is blank or `false` and that field is filled |
+| SNMP contact, location, SNMPv3 user, and the passwords for the selected protocols | Configure and enable SNMP. When authentication is `none`, authentication password, privacy protocol, and privacy password are hidden, and privacy is also set to `none`. Otherwise those three fields are shown, and the privacy password is hidden and not required when privacy is `none`. The protocol dropdown shows only the values allowed for the selected FIPS mode. Community and traphost are optional and are applied only when FIPS is blank or `false` and that field is filled |
 | Login banner text | Set the login banner |

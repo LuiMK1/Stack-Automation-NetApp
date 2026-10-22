@@ -135,11 +135,13 @@ customization:
               - name: snmp_auth_protocol_fips
                 visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}false{% endif %}'
               - name: snmp_auth_password
+                visible: '{% if inputs.is_fips_enabled == "true" or inputs.snmp_auth_protocol != "none" %}true{% else %}false{% endif %}'
               - name: snmp_priv_protocol
-                visible: '{% if inputs.is_fips_enabled != "true" %}true{% else %}false{% endif %}'
+                visible: '{% if inputs.is_fips_enabled != "true" and inputs.snmp_auth_protocol != "none" %}true{% else %}false{% endif %}'
               - name: snmp_priv_protocol_fips
                 visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}false{% endif %}'
               - name: snmp_priv_password
+                visible: '{% if inputs.is_fips_enabled == "true" or (inputs.snmp_auth_protocol != "none" and inputs.snmp_priv_protocol != "none") %}true{% else %}false{% endif %}'
 
 inputs:
   agent:
@@ -549,7 +551,7 @@ grains:
 
   configure_snmp:
     kind: ansible
-    when: '{% if .inputs.snmp_contact != "" and .inputs.snmp_location != "" and .inputs.snmp_v3_user != "" %}{% if .inputs.is_fips_enabled == "true" %}{% if .inputs.snmp_auth_password != "" and .inputs.snmp_priv_password != "" %}true{% else %}false{% endif %}{% else %}{% if .inputs.snmp_auth_protocol == "none" or .inputs.snmp_auth_password != "" %}{% if .inputs.snmp_priv_protocol == "none" or .inputs.snmp_priv_password != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}{% endif %}{% else %}false{% endif %}'
+    when: '{% if .inputs.snmp_contact != "" and .inputs.snmp_location != "" and .inputs.snmp_v3_user != "" %}{% if .inputs.is_fips_enabled == "true" %}{% if .inputs.snmp_auth_password != "" and .inputs.snmp_priv_password != "" %}true{% else %}false{% endif %}{% elif .inputs.snmp_auth_protocol == "none" %}true{% elif .inputs.snmp_auth_password != "" and (.inputs.snmp_priv_protocol == "none" or .inputs.snmp_priv_password != "") %}true{% else %}false{% endif %}{% else %}false{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp
