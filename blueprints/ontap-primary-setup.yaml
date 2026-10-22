@@ -135,13 +135,13 @@ customization:
               - name: snmp_auth_protocol_fips
                 visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}false{% endif %}'
               - name: snmp_auth_password
-                visible: '{% assign auth_on = false %}{% if inputs.snmp_auth_protocol == "md5" or inputs.snmp_auth_protocol == "sha" or inputs.snmp_auth_protocol == "sha2_256" %}{% assign auth_on = true %}{% endif %}{% if inputs.is_fips_enabled == "true" or auth_on == true %}true{% else %}false{% endif %}'
+                visible: '{% if inputs.is_fips_enabled == "true" %}true{% elsif inputs.snmp_auth_protocol == "md5" %}true{% elsif inputs.snmp_auth_protocol == "sha" %}true{% elsif inputs.snmp_auth_protocol == "sha2_256" %}true{% else %}false{% endif %}'
               - name: snmp_priv_protocol
-                visible: '{% assign auth_on = false %}{% if inputs.snmp_auth_protocol == "md5" or inputs.snmp_auth_protocol == "sha" or inputs.snmp_auth_protocol == "sha2_256" %}{% assign auth_on = true %}{% endif %}{% assign show_priv_protocol = false %}{% if inputs.is_fips_enabled != "true" and auth_on == true %}{% assign show_priv_protocol = true %}{% endif %}{% if show_priv_protocol == true %}true{% else %}false{% endif %}'
+                visible: '{% if inputs.is_fips_enabled == "true" %}false{% elsif inputs.snmp_auth_protocol == "md5" %}true{% elsif inputs.snmp_auth_protocol == "sha" %}true{% elsif inputs.snmp_auth_protocol == "sha2_256" %}true{% else %}false{% endif %}'
               - name: snmp_priv_protocol_fips
                 visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}false{% endif %}'
               - name: snmp_priv_password
-                visible: '{% assign auth_on = false %}{% if inputs.snmp_auth_protocol == "md5" or inputs.snmp_auth_protocol == "sha" or inputs.snmp_auth_protocol == "sha2_256" %}{% assign auth_on = true %}{% endif %}{% assign priv_on = false %}{% if inputs.snmp_priv_protocol == "des" or inputs.snmp_priv_protocol == "aes128" %}{% assign priv_on = true %}{% endif %}{% assign both_on = false %}{% if auth_on == true and priv_on == true %}{% assign both_on = true %}{% endif %}{% if inputs.is_fips_enabled == "true" or both_on == true %}true{% else %}false{% endif %}'
+                visible: '{% if inputs.is_fips_enabled == "true" %}true{% elsif inputs.snmp_auth_protocol == "md5" %}{% if inputs.snmp_priv_protocol == "des" %}true{% elsif inputs.snmp_priv_protocol == "aes128" %}true{% else %}false{% endif %}{% elsif inputs.snmp_auth_protocol == "sha" %}{% if inputs.snmp_priv_protocol == "des" %}true{% elsif inputs.snmp_priv_protocol == "aes128" %}true{% else %}false{% endif %}{% elsif inputs.snmp_auth_protocol == "sha2_256" %}{% if inputs.snmp_priv_protocol == "des" %}true{% elsif inputs.snmp_priv_protocol == "aes128" %}true{% else %}false{% endif %}{% else %}false{% endif %}'
 
 inputs:
   agent:
@@ -551,7 +551,7 @@ grains:
 
   configure_snmp:
     kind: ansible
-    when: '{% if .inputs.snmp_contact != "" and .inputs.snmp_location != "" and .inputs.snmp_v3_user != "" %}{% if .inputs.is_fips_enabled == "true" %}{% if .inputs.snmp_auth_password != "" and .inputs.snmp_priv_password != "" %}true{% else %}false{% endif %}{% elif .inputs.snmp_auth_protocol == "none" %}true{% elif .inputs.snmp_auth_password != "" and (.inputs.snmp_priv_protocol == "none" or .inputs.snmp_priv_password != "") %}true{% else %}false{% endif %}{% else %}false{% endif %}'
+    when: '{% if .inputs.snmp_contact != "" and .inputs.snmp_location != "" and .inputs.snmp_v3_user != "" %}{% if .inputs.is_fips_enabled == "true" %}{% if .inputs.snmp_auth_password != "" and .inputs.snmp_priv_password != "" %}true{% else %}false{% endif %}{% elif .inputs.snmp_auth_protocol == "none" or .inputs.snmp_auth_protocol == "" %}true{% elif .inputs.snmp_auth_password != "" and (.inputs.snmp_priv_protocol == "none" or .inputs.snmp_priv_protocol == "" or .inputs.snmp_priv_password != "") %}true{% else %}false{% endif %}{% else %}false{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp

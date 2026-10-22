@@ -5,10 +5,15 @@
   gather_facts: false
 
   tasks:
+    - name: Treat a blank or reset protocol value as none
+      ansible.builtin.set_fact:
+        snmp_auth_protocol_effective: "{{ 'none' if (snmp_auth_protocol | default('') | trim) in ['', 'none'] else snmp_auth_protocol }}"
+        snmp_priv_protocol_effective: "{{ 'none' if (snmp_priv_protocol | default('') | trim) in ['', 'none'] else snmp_priv_protocol }}"
+
     - name: Choose the SNMP protocols for the FIPS mode
       ansible.builtin.set_fact:
-        snmp_auth_protocol_selected: "{{ snmp_auth_protocol_fips if (is_fips_enabled | bool) else snmp_auth_protocol }}"
-        snmp_priv_protocol_selected: "{{ snmp_priv_protocol_fips if (is_fips_enabled | bool) else ('none' if snmp_auth_protocol == 'none' else snmp_priv_protocol) }}"
+        snmp_auth_protocol_selected: "{{ snmp_auth_protocol_fips if (is_fips_enabled | bool) else snmp_auth_protocol_effective }}"
+        snmp_priv_protocol_selected: "{{ snmp_priv_protocol_fips if (is_fips_enabled | bool) else ('none' if snmp_auth_protocol_effective == 'none' else snmp_priv_protocol_effective) }}"
 
     - name: Validate SNMP inputs
       ansible.builtin.assert:
