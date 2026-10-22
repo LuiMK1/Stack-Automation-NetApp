@@ -5,15 +5,10 @@
   gather_facts: false
 
   tasks:
-    - name: Treat a blank or reset protocol value as none
-      ansible.builtin.set_fact:
-        snmp_auth_protocol_effective: "{{ 'none' if (snmp_auth_protocol | default('') | trim) in ['', 'none'] else snmp_auth_protocol }}"
-        snmp_priv_protocol_effective: "{{ 'none' if (snmp_priv_protocol | default('') | trim) in ['', 'none'] else snmp_priv_protocol }}"
-
     - name: Choose the SNMP protocols for the FIPS mode
       ansible.builtin.set_fact:
-        snmp_auth_protocol_selected: "{{ snmp_auth_protocol_fips if (is_fips_enabled | bool) else snmp_auth_protocol_effective }}"
-        snmp_priv_protocol_selected: "{{ snmp_priv_protocol_fips if (is_fips_enabled | bool) else ('none' if snmp_auth_protocol_effective == 'none' else snmp_priv_protocol_effective) }}"
+        snmp_auth_protocol_selected: "{{ snmp_auth_protocol_fips if (is_fips_enabled | bool) else snmp_auth_protocol }}"
+        snmp_priv_protocol_selected: "{{ snmp_priv_protocol_fips if (is_fips_enabled | bool) else snmp_priv_protocol }}"
 
     - name: Validate SNMP inputs
       ansible.builtin.assert:
@@ -29,7 +24,7 @@
           SNMP needs a contact, location, and SNMPv3 user.
           When FIPS is enabled, authentication must be sha or sha2_256 and privacy must be aes128.
           Otherwise authentication can be none, md5, sha, or sha2_256, and privacy can be none, des, or aes128.
-          Selecting no authentication also disables privacy. A password is required unless that protocol is none.
+          A password is required unless that protocol is none.
 
     - name: Configure SNMP contact
       netapp.ontap.na_ontap_rest_cli:
@@ -103,6 +98,7 @@
       when:
         - not (is_fips_enabled | bool)
         - snmp_community | default('') | length > 0
+
 
     - name: Configure SNMPv3 access
       netapp.ontap.na_ontap_snmp:
