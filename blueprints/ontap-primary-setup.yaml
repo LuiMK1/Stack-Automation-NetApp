@@ -135,13 +135,13 @@ customization:
               - name: snmp_auth_protocol_fips
                 visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}false{% endif %}'
               - name: snmp_auth_password
-                visible: '{% if inputs.is_fips_enabled == "true" or inputs.snmp_auth_protocol != "none" %}true{% else %}false{% endif %}'
+                visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}{% if inputs.snmp_auth_protocol != "none" %}true{% else %}false{% endif %}{% endif %}'
               - name: snmp_priv_protocol
-                visible: '{% if inputs.is_fips_enabled != "true" and inputs.snmp_auth_protocol != "none" %}true{% else %}false{% endif %}'
+                visible: '{% if inputs.is_fips_enabled == "true" %}false{% else %}{% if inputs.snmp_auth_protocol != "none" %}true{% else %}false{% endif %}{% endif %}'
               - name: snmp_priv_protocol_fips
                 visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}false{% endif %}'
               - name: snmp_priv_password
-                visible: '{% if inputs.is_fips_enabled == "true" or (inputs.snmp_auth_protocol != "none" and inputs.snmp_priv_protocol != "none") %}true{% else %}false{% endif %}'
+                visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}{% if inputs.snmp_auth_protocol == "none" %}false{% else %}{% if inputs.snmp_priv_protocol == "none" %}false{% else %}true{% endif %}{% endif %}{% endif %}'
 
 inputs:
   agent:
