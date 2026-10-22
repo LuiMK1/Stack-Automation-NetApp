@@ -244,7 +244,7 @@ inputs:
     description: SNMPv3 user name.
   snmp_auth_protocol:
     type: string
-    default: sha
+    default: none
     allowed-values: ["none", "md5", "sha", "sha2_256"]
     description: SNMPv3 authentication protocol when FIPS is off. A password is required unless this is none.
   snmp_auth_protocol_fips:
@@ -259,7 +259,7 @@ inputs:
     description: SNMPv3 authentication password.
   snmp_priv_protocol:
     type: string
-    default: aes128
+    default: none
     allowed-values: ["none", "des", "aes128"]
     description: SNMPv3 privacy protocol when FIPS is off. A password is required unless this is none.
   snmp_priv_protocol_fips:
