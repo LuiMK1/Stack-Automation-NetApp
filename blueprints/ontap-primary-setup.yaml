@@ -224,11 +224,11 @@ inputs:
   snmp_contact:
     type: string
     default: ""
-    description: SNMP contact string.
+    description: Optional SNMP contact string. Leave empty to skip.
   snmp_location:
     type: string
     default: ""
-    description: SNMP location string.
+    description: Optional SNMP location string. Leave empty to skip.
   traphost_ip:
     type: string
     default: ""
@@ -241,7 +241,7 @@ inputs:
   snmp_v3_user:
     type: string
     default: ""
-    description: SNMPv3 user name.
+    description: Optional SNMPv3 user name. Leave empty to skip SNMPv3.
   snmp_auth_protocol:
     type: string
     default: none
@@ -550,7 +550,7 @@ grains:
 
   configure_snmp:
     kind: ansible
-    when: '{% if .inputs.snmp_contact != "" and .inputs.snmp_location != "" and .inputs.snmp_v3_user != "" %}{% if .inputs.is_fips_enabled == "true" %}{% if .inputs.snmp_auth_password != "" and .inputs.snmp_priv_password != "" %}true{% else %}false{% endif %}{% else %}{% if .inputs.snmp_auth_protocol == "none" or .inputs.snmp_auth_password != "" %}{% if .inputs.snmp_priv_protocol == "none" or .inputs.snmp_priv_password != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}{% endif %}{% else %}false{% endif %}'
+    when: '{% if .inputs.snmp_contact != "" or .inputs.snmp_location != "" or .inputs.snmp_v3_user != "" %}true{% else %}{% if .inputs.is_fips_enabled != "true" %}{% if .inputs.snmp_community != "" or .inputs.traphost_ip != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp
