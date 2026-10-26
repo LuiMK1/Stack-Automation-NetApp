@@ -160,7 +160,9 @@ inputs:
   cluster_name:
     type: string
     default: ""
-    description: ONTAP cluster name. Used by location and timezone.
+    description: >-
+      ONTAP cluster name. Used by location and timezone. Must exactly match the
+      cluster's current name. Entering a different value renames the cluster.
   cluster_location:
     type: string
     default: ""

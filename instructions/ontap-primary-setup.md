@@ -8,6 +8,8 @@ Storage failover, cluster HA, cluster-management auto-revert, spare-disk zeroing
 
 Node configuration is one table. Each row is one node, so the node name is entered once. That row has separate columns for the service-processor address, data ports, aggregate name, and disk count. One aggregate is created on that node. To skip the service-processor, aggregate, and data-port tasks, delete every row. A blank row still counts as a row, and Finish stays disabled until that row is filled in or deleted.
 
+Cluster name is used only by the location and timezone tasks. It must exactly match the cluster's current name. Entering a different value renames the cluster while those tasks run.
+
 | Filled in | Task that runs |
 | --- | --- |
 | Cluster name and location | Update cluster location |
