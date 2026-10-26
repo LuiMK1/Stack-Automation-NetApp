@@ -70,19 +70,19 @@ customization:
         position: {x: 1200, y: 560}
       configure_autosupport:
         type: grain
-        position: {x: 360, y: 800}
+        position: {x: 80, y: 800}
       add_licenses:
         type: grain
-        position: {x: 640, y: 800}
+        position: {x: 360, y: 800}
       configure_fips:
         type: grain
-        position: {x: 920, y: 800}
+        position: {x: 640, y: 800}
       configure_snmp:
         type: grain
-        position: {x: 1200, y: 800}
+        position: {x: 920, y: 800}
       create_login_banner:
         type: grain
-        position: {x: 80, y: 800}
+        position: {x: 1200, y: 800}
   launch-form:
     categories:
       - name: ONTAP Primary Setup
