@@ -1,6 +1,6 @@
 # ONTAP Primary Setup
 
-The launch form does not show run or skip switches. Leave a section blank and that task stays skipped. Enter values and that task runs.
+The launch form does not show run or skip switches. Leave a section blank and that task stays skipped. Enter values and that task runs. The FIPS dropdown is the exception: it defaults to false and that task runs on every launch.
 
 Required fields are the agent, cluster management address, and password. The username defaults to admin. You can click Next and Finish with only those filled in.
 
@@ -17,6 +17,6 @@ Node configuration is one table. Each row is one node, so the node name is enter
 | Cluster name and timezone | Set the timezone |
 | AutoSupport mail settings | Configure AutoSupport on the nodes discovered from the cluster |
 | Legacy license keys or NLF contents | Add licenses |
-| `true` or `false` in the FIPS dropdown | Set SSL FIPS mode. Leave the dropdown blank to leave cluster FIPS unchanged |
-| Any of SNMP contact, location, community, traphost, or SNMPv3 user | Configure and enable SNMP. Contact, location, and the SNMPv3 user each apply only when that field is filled, so leaving location or traphost blank does not skip the rest. Authentication and privacy are chosen independently, and both password fields stay on the form. With FIPS blank or `false`, authentication is `none`, `md5`, `sha`, or `sha2_256` and privacy is `none`, `des`, or `aes128`. A password is required for each protocol that is not `none` when an SNMPv3 user is set. Community and traphost apply only when FIPS is blank or `false` and that field is filled. With FIPS `true`, the form shows `sha` or `sha2_256` for authentication and `aes128` for privacy, and both passwords are required when an SNMPv3 user is set |
+| FIPS dropdown | Set SSL FIPS mode on every launch. The dropdown defaults to `false`, which matches a new ONTAP cluster. Choose `true` to enable FIPS-compliant SSL |
+| Any of SNMP contact, location, community, traphost, or SNMPv3 user | Configure and enable SNMP. Contact, location, and the SNMPv3 user each apply only when that field is filled, so leaving location or traphost blank does not skip the rest. Authentication and privacy are chosen independently, and both password fields stay on the form. With FIPS `false`, authentication is `none`, `md5`, `sha`, or `sha2_256` and privacy is `none`, `des`, or `aes128`. A password is required for each protocol that is not `none` when an SNMPv3 user is set. Community and traphost apply only when FIPS is `false` and that field is filled. With FIPS `true`, the form shows `sha` or `sha2_256` for authentication and `aes128` for privacy, and both passwords are required when an SNMPv3 user is set |
 | Login banner text | Set the login banner |

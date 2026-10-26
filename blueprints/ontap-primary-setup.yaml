@@ -3,6 +3,7 @@ description: >-
   ONTAP primary setup from the FlexPod Base IMM role ontap_primary_setup.
   Only the cluster address, username, and password are required. A task runs
   when its fields are filled in and stays skipped when they are left blank.
+  SSL FIPS is set on every launch and defaults to false.
   Fibre Channel is not included.
 
 instructions:
@@ -216,11 +217,11 @@ inputs:
     description: Full contents of the NetApp license file.
   is_fips_enabled:
     type: string
-    default: ""
-    allowed-values: ["", "true", "false"]
+    default: "false"
+    allowed-values: ["false", "true"]
     description: >-
-      Leave blank to leave cluster FIPS unchanged. Choose true to enable
-      FIPS-compliant SSL, or false to disable it. ONTAP starts with FIPS disabled.
+      SSL FIPS mode. Defaults to false, which matches a new ONTAP cluster.
+      Choose true to enable FIPS-compliant SSL. Every launch applies this value.
   snmp_contact:
     type: string
     default: ""
@@ -535,7 +536,6 @@ grains:
 
   configure_fips:
     kind: ansible
-    when: '{% if .inputs.is_fips_enabled == "true" or .inputs.is_fips_enabled == "false" %}true{% else %}false{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp
