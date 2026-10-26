@@ -26,7 +26,7 @@ customization:
       update_cluster_location:
         type: grain
         position: {x: 80, y: 80}
-      configure_cluster_mgmt:
+      ensure_cluster_mgmt_auto_revert:
         type: grain
         position: {x: 360, y: 80}
       delete_broadcast_domains:
@@ -297,12 +297,12 @@ grains:
         - cluster_name: '{{ .inputs.cluster_name }}'
         - cluster_location: '{{ .inputs.cluster_location }}'
 
-  configure_cluster_mgmt:
+  ensure_cluster_mgmt_auto_revert:
     kind: ansible
     spec:
       source:
         store: Stack-Automation-NetApp
-        path: assets/ansible/netapp-ontap/configure_cluster_mgmt.yaml
+        path: assets/ansible/netapp-ontap/ensure_cluster_mgmt_auto_revert.yaml
       agent:
         name: '{{ .inputs.agent }}'
       inputs:
