@@ -1,4 +1,4 @@
-# ONTAP Primary Setup
+# ONTAP Storage Setup
 
 The launch form does not show run or skip switches. Leave a section blank and that task stays skipped. Enter values and that task runs. The FIPS dropdown is the exception: it defaults to false and that task runs on every launch.
 

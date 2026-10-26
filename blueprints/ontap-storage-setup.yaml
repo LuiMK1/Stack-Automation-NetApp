@@ -1,6 +1,6 @@
 spec_version: 2
 description: >-
-  ONTAP primary setup from the FlexPod Base IMM role ontap_primary_setup.
+  ONTAP storage setup.
   Only the cluster address, username, and password are required. A task runs
   when its fields are filled in and stays skipped when they are left blank.
   SSL FIPS is set on every launch and defaults to false.
@@ -9,10 +9,10 @@ description: >-
 instructions:
   source:
     store: Stack-Automation-NetApp
-    path: instructions/ontap-primary-setup.md
+    path: instructions/ontap-storage-setup.md
 
 metadata:
-  display-name: ONTAP Primary Setup
+  display-name: ONTAP Storage Setup
   blueprint-labels:
     - key: Category
       value: Storage
@@ -85,7 +85,7 @@ customization:
         position: {x: 1200, y: 800}
   launch-form:
     categories:
-      - name: ONTAP Primary Setup
+      - name: ONTAP Storage Setup
         icon: layer
         sections:
           - name: Management Server
