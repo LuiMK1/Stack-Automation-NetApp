@@ -6,26 +6,26 @@
 
   tasks:
 
-    - name: Get Cluster Information
+    - name: Get cluster information using REST CLI
       netapp.ontap.na_ontap_rest_cli:
-        hostname: "{{ ontap_hostname }}"
-        username: "{{ ontap_username }}"
-        password: "{{ ontap_password }}"
-        https: true
-        validate_certs: false
-        command: ['cluster', 'show']
-        privilege: 'admin'
-        return_dict: true
+        hostname: "{{ netapp_hostname }}"
+        username: "{{ netapp_username }}"
+        password: "{{ netapp_password }}"
+        command: cluster
         verb: GET
-      register: cluster_show_output
+      register: cluster_output
 
-    - name: Print Cluster Information
+    - name: Print the full cluster show raw JSON response
       ansible.builtin.debug:
-        var: cluster_show_output.stdout_dict
+        var: cluster_output.output
 
-    - name: Ensure all nodes are healthy
-      ansible.builtin.debug:
-        msg: "Verifying health metrics across all discovered nodes..."
-      failed_when: >
-        cluster_show_output.stdout_dict.tables[0].rows | 
-        selectattr('health', 'equalto', 'false') | list | length > 0
+    - name: Verify that all individual nodes in the cluster are healthy
+      ansible.builtin.assert:
+        that:
+          - item.health == true or item.health == 'true'
+          - item.eligibility == true or item.eligibility == 'true'
+        fail_msg: "Node {{ item.node }} is unhealthy or ineligible! Current status - Health: {{ item.health }}, Eligibility: {{ item.eligibility }}"
+        success_msg: "Node {{ item.node }} is healthy and eligible."
+      loop: "{{ cluster_output.output.num_records | default(0) > 0 | ternary(cluster_output.output.records, []) }}"
+      loop_control:
+        label: "{{ item.node }}"
