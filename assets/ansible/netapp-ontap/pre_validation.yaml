@@ -41,7 +41,7 @@
         gather_subset:
         - storage/disks
         fields: 
-          - "*"
+          - "state"
         https: true
         validate_certs: false
       register: disk_output
@@ -49,3 +49,13 @@
     - name: Print the disk information
       ansible.builtin.debug:
         var: disk_output
+
+    - name: Verify that all storage disks are present
+      ansible.builtin.assert:
+        that:
+          - item.state == 'present'
+        fail_msg: "Disk {{ item.name }} is not present! Current state: {{ item.state }}"
+        success_msg: "Disk {{ item.name }} is present."
+      loop: "{{ disk_output.ontap_info['storage/disks'].records }}"
+      loop_control:
+        label: "{{ item.name }}"
