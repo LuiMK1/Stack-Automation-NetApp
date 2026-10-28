@@ -19,7 +19,7 @@
 
     - name: Print the full cluster show raw JSON response
       ansible.builtin.debug:
-        var: cluster_output.output
+        var: cluster_output.msg
 
     - name: Verify that all individual nodes in the cluster are healthy
       ansible.builtin.assert:
@@ -28,6 +28,6 @@
           - item.eligibility == true or item.eligibility == 'true'
         fail_msg: "Node {{ item.node }} is unhealthy or ineligible! Current status - Health: {{ item.health }}, Eligibility: {{ item.eligibility }}"
         success_msg: "Node {{ item.node }} is healthy and eligible."
-      loop: "{{ cluster_output.output.num_records | default(0) > 0 | ternary(cluster_output.output.records, []) }}"
+      loop: "{{ cluster_output.output.num_records | default(0) > 0 | ternary(cluster_output.msg.records, []) }}"
       loop_control:
         label: "{{ item.node }}"
