@@ -6,7 +6,7 @@
 
   tasks:
 
-    - name: Get cluster information using REST CLI
+    - name: Get cluster readiness information
       netapp.ontap.na_ontap_rest_info:
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
@@ -19,17 +19,16 @@
         validate_certs: false
       register: cluster_output
 
-    - name: Print the full cluster show raw JSON response
+    - name: Print the cluster information
       ansible.builtin.debug:
         var: cluster_output
 
     - name: Verify that all individual nodes in the cluster are healthy
       ansible.builtin.assert:
         that:
-          - item.health == true or item.health == 'true'
-          - item.eligibility == true or item.eligibility == 'true'
-        fail_msg: "Node {{ item.node }} is unhealthy or ineligible! Current status - Health: {{ item.health }}, Eligibility: {{ item.eligibility }}"
-        success_msg: "Node {{ item.node }} is healthy and eligible."
-      loop: "{{ cluster_output.msg.num_records | default(0) > 0 | ternary(cluster_output.msg.records, []) }}"
+          - item.state == 'up'
+        fail_msg: "Node {{ item.name }} is not up! Current state: {{ item.state }}"
+        success_msg: "Node {{ item.name }} is up."
+      loop: "{{ cluster_output.ontap_info['cluster/nodes'].records }}"
       loop_control:
-        label: "{{ item.node }}"
+        label: "{{ item.name }}"
