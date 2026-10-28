@@ -13,6 +13,8 @@
         password: "{{ ontap_password }}"
         gather_subset:
         - cluster/nodes
+        query:
+          fields: "*"
         https: true
         validate_certs: false
       register: cluster_output
