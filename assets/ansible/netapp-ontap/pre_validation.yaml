@@ -32,3 +32,20 @@
       loop: "{{ cluster_output.ontap_info['cluster/nodes'].records }}"
       loop_control:
         label: "{{ item.name }}"
+
+    - name: Get storage disk information
+      netapp.ontap.na_ontap_rest_info:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        gather_subset:
+        - storage/disk
+        fields: 
+          - "state"
+        https: true
+        validate_certs: false
+      register: disk_output
+
+    - name: Print the disk information
+      ansible.builtin.debug:
+        var: disk_output
