@@ -14,7 +14,7 @@
         gather_subset:
         - cluster/nodes
         fields: 
-          - "*"
+          - "state"
         https: true
         validate_certs: false
       register: cluster_output
