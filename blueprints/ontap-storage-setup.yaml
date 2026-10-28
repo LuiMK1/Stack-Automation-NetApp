@@ -25,7 +25,7 @@ customization:
     nodes:
       pre_validation:
         type: grain
-        position: {x: 0, y: 80}
+        position: {x: 40, y: 80}
       update_cluster_location:
         type: grain
         position: {x: 80, y: 80}
@@ -288,7 +288,7 @@ grains:
     when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA_ONTAP_Lui
         path: assets/ansible/netapp-ontap/pre_validation.yaml
       agent:
         name: '{{ .inputs.agent }}'

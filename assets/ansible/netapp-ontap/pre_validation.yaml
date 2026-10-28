@@ -1,5 +1,5 @@
 ---
-- name: ONTAP Pre-Validation Tasks
+- name: Pre-Validation Tasks
   hosts: localhost
   connection: local
   gather_facts: false
