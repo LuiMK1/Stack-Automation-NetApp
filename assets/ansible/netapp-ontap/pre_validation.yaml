@@ -16,6 +16,7 @@
         command: ['cluster', 'show']
         privilege: 'admin'
         return_dict: true
+        verb: GET
       register: cluster_show_output
 
     - name: Print Cluster Information
