@@ -39,7 +39,7 @@
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
         gather_subset:
-        - storage/disk
+        - storage/disks
         fields: 
           - "state"
         https: true
