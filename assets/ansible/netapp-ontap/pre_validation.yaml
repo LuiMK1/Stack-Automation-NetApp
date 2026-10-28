@@ -13,6 +13,8 @@
         password: "{{ ontap_password }}"
         command: cluster
         verb: GET
+        https: true
+        validate_certs: false
       register: cluster_output
 
     - name: Print the full cluster show raw JSON response
