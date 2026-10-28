@@ -28,6 +28,6 @@
           - item.eligibility == true or item.eligibility == 'true'
         fail_msg: "Node {{ item.node }} is unhealthy or ineligible! Current status - Health: {{ item.health }}, Eligibility: {{ item.eligibility }}"
         success_msg: "Node {{ item.node }} is healthy and eligible."
-      loop: "{{ cluster_output.output.num_records | default(0) > 0 | ternary(cluster_output.msg.records, []) }}"
+      loop: "{{ cluster_output.msg.num_records | default(0) > 0 | ternary(cluster_output.msg.records, []) }}"
       loop_control:
         label: "{{ item.node }}"
