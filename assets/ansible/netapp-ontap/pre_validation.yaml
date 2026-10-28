@@ -7,7 +7,7 @@
   tasks:
 
     - name: Get Cluster Information
-      netapp.ontap.na_ontap_command:
+      netapp.ontap.na_ontap_rest_cli:
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
