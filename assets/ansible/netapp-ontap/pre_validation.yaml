@@ -41,7 +41,7 @@
         gather_subset:
         - storage/disks
         fields: 
-          - "state"
+          - "*"
         https: true
         validate_certs: false
       register: disk_output
