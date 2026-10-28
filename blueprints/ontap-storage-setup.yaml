@@ -23,6 +23,9 @@ customization:
   grains-map:
     initial-map-view: custom
     nodes:
+      ontap_pre_validation:
+        type: grain
+        position: {x: 0, y: 80}
       update_cluster_location:
         type: grain
         position: {x: 80, y: 80}
@@ -280,6 +283,20 @@ inputs:
     description: Login banner text.
 
 grains:
+  ontap_pre_validation:
+    kind: ansible
+    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" %}true{% else %}false{% endif %}'
+    spec:
+      source:
+        store: Stack-Automation-NetApp
+        path: assets/ansible/netapp-ontap/ontap_pre_validation.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        
   update_cluster_location:
     kind: ansible
     when: '{% if .inputs.cluster_name != "" and .inputs.cluster_location != "" %}true{% else %}false{% endif %}'

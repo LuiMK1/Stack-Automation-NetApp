@@ -1,0 +1,30 @@
+---
+- name: ONTAP Pre-Validation Tasks
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+
+    - name: Get Cluster Information
+      netapp.ontap.na_ontap_command:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        command: ['cluster', 'show']
+        privilege: 'admin'
+        return_dict: true
+      register: cluster_show_output
+
+    - name: Print Cluster Information
+      ansible.builtin.debug:
+        var: cluster_show_output.stdout_dict
+
+    - name: Ensure all nodes are healthy
+      ansible.builtin.debug:
+        msg: "Verifying health metrics across all discovered nodes..."
+      failed_when: >
+        cluster_show_output.stdout_dict.tables[0].rows | 
+        selectattr('health', 'equalto', 'false') | list | length > 0
