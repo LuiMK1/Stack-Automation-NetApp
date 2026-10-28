@@ -12,9 +12,8 @@
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
         gather_subset:
-        - cluster/nodes
-        query:
-          fields: "*"
+        - cluster/cluster_node_info
+        fields: "*"
         https: true
         validate_certs: false
       register: cluster_output
