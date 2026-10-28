@@ -7,19 +7,19 @@
   tasks:
 
     - name: Get cluster information using REST CLI
-      netapp.ontap.na_ontap_rest_cli:
+      netapp.ontap.na_ontap_rest_info:
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
-        command: cluster
-        verb: GET
+        gather_subset:
+        - cluster/nodes
         https: true
         validate_certs: false
       register: cluster_output
 
     - name: Print the full cluster show raw JSON response
       ansible.builtin.debug:
-        var: cluster_output.msg
+        var: cluster_output
 
     - name: Verify that all individual nodes in the cluster are healthy
       ansible.builtin.assert:
