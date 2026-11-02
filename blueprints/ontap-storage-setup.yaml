@@ -288,7 +288,7 @@ grains:
     when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: SA_ONTAP_Lui
+        store: Stack-Automation-NetApp
         path: assets/ansible/netapp-ontap/pre_validation.yaml
       agent:
         name: '{{ .inputs.agent }}'
