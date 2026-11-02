@@ -59,7 +59,9 @@
         password: "{{ ontap_password }}"
         command: 'storage shelf'
         verb: GET
+        validate-certs: false
       register: shelf_output
+    
 
     - name: Print the disk shelf information
       ansible.builtin.debug:
