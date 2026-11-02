@@ -84,6 +84,8 @@
         fields: 
           - '*'
         https: true
+        parameters:
+          is_root: "true"
         validate_certs: false
       register: aggregate_output
 
