@@ -109,7 +109,7 @@
         gather_subset:
         - network/ip/interfaces
         fields: 
-          - scope, state
+          - "*"
         https: true
         validate_certs: false
       register: lif_output
