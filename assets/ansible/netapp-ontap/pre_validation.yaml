@@ -59,7 +59,7 @@
         password: "{{ ontap_password }}"
         command: storage/shelf
         params:
-          fields: state, op-status
+          fields: state
         verb: GET
         validate_certs: false
       register: shelf_output
@@ -77,3 +77,20 @@
       loop: "{{ shelf_output.msg.records }}"
       loop_control:
         label: "{{ item.shelf }}"
+
+    - name: Get root aggregate information
+      netapp.ontap.na_ontap_rest_info:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        gather_subset:
+        - storage/aggregates
+        fields: 
+          - "state"
+        https: true
+        validate_certs: false
+      register: aggregate_output
+
+    - name: Print the root aggregate information
+      ansible.builtin.debug:
+        var: aggregate_output
