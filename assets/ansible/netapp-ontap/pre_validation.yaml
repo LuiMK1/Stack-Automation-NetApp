@@ -59,7 +59,7 @@
         password: "{{ ontap_password }}"
         command: storage/shelf
         params:
-           fields: state
+          fields: state, op-status
         verb: GET
         validate_certs: false
       register: shelf_output
@@ -67,3 +67,13 @@
     - name: Print the disk shelf information
       ansible.builtin.debug:
         var: shelf_output
+
+    - name: Validate all shelves are online
+      ansible.builtin.assert:
+        that:
+          - item.state == 'online'
+        fail_msg: "Shelf {{ item.shelf }} is not online (state: {{ item.state }})."
+        success_msg: "Shelf {{ item.shelf }} is online."
+      loop: "{{ shelf_output.msg.records }}"
+      loop_control:
+        label: "{{ item.shelf }}"
