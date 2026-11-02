@@ -64,10 +64,6 @@
         validate_certs: false
       register: shelf_output
     
-    - name: Print the disk shelf information
-      ansible.builtin.debug:
-        var: shelf_output
-
     - name: Validate all shelves are online
       ansible.builtin.assert:
         that:
@@ -86,7 +82,7 @@
         gather_subset:
         - storage/aggregates
         fields: 
-          - 'state'
+          - '*'
         https: true
         validate_certs: false
       register: aggregate_output
@@ -115,16 +111,12 @@
         validate_certs: false
       register: lif_output
 
-    - name: Print the lif information
-      ansible.builtin.debug:
-        var: lif_output
-
     - name: Verify that all cluster, cluster management and node management LIFs are up
       ansible.builtin.assert:
         that:
           - item.state == 'up'
-        fail_msg: "Cluster LIF {{ item.name }} is not up! Current state: {{ item.state }}"
-        success_msg: "Cluster LIF {{ item.name }} is up."
+        fail_msg: "LIF {{ item.name }} is not up! Current state: {{ item.state }}"
+        success_msg: "LIF {{ item.name }} is up."
       loop: "{{ lif_output.ontap_info['network/ip/interfaces'].records | selectattr('scope', 'equalto', 'cluster') | list }}"
       loop_control:
         label: "{{ item.name }}"
