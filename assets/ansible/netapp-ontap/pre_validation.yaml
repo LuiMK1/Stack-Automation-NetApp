@@ -59,7 +59,7 @@
         password: "{{ ontap_password }}"
         command: storage/shelf
         params:
-          fields: state
+          fields: '*'
         verb: GET
         validate_certs: false
       register: shelf_output
@@ -86,7 +86,7 @@
         gather_subset:
         - storage/aggregates
         fields: 
-          - "state"
+          - '*'
         https: true
         validate_certs: false
       register: aggregate_output
