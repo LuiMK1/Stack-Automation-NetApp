@@ -111,8 +111,6 @@
         fields: 
           - state 
           - scope
-        parameters:
-          role: cluster
         https: true
         validate_certs: false
       register: lif_output
@@ -121,7 +119,7 @@
       ansible.builtin.debug:
         var: lif_output
 
-    - name: Verify that all cluster LIFs are up
+    - name: Verify that all cluster, cluster management and node management LIFs are up
       ansible.builtin.assert:
         that:
           - item.state == 'up'
