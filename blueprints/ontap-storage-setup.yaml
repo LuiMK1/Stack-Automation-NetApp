@@ -25,7 +25,7 @@ customization:
     nodes:
       pre_validation:
         type: grain
-        position: {x: 80, y: 40}
+        position: {x: 80, y: 0}
       update_cluster_location:
         type: grain
         position: {x: 80, y: 80}

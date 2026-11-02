@@ -19,10 +19,6 @@
         validate_certs: false
       register: cluster_output
 
-    - name: Print the cluster information
-      ansible.builtin.debug:
-        var: cluster_output
-
     - name: Verify that all individual nodes in the cluster are healthy
       ansible.builtin.assert:
         that:
@@ -46,10 +42,6 @@
         validate_certs: false
       register: disk_output
 
-    - name: Print the disk information
-      ansible.builtin.debug:
-        var: disk_output
-
     - name: Verify that all storage disks are present
       ansible.builtin.assert:
         that:
@@ -59,3 +51,16 @@
       loop: "{{ disk_output.ontap_info['storage/disks'].records }}"
       loop_control:
         label: "{{ item.name }}"
+
+    - name: Run ONTAP REST CLI command
+      netapp.ontap.na_ontap_rest_cli:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        command: 'storage shelf'
+        verb: GET
+        register: shelf_output
+
+    - name: Print the disk shelf information
+      ansible.builtin.debug:
+        var: shelf_output
