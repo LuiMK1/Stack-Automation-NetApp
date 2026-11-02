@@ -86,11 +86,17 @@
         gather_subset:
         - storage/aggregates
         fields: 
-          - '*'
+          - 'state'
         https: true
         validate_certs: false
       register: aggregate_output
 
-    - name: Print the root aggregate information
-      ansible.builtin.debug:
-        var: aggregate_output
+    - name: Verify that all root aggregates are online
+      ansible.builtin.assert:
+         that:
+           - item.state == 'online'
+         fail_msg: "Aggregate {{ item.name }} is not online! Current state: {{ item.state }}"
+         success_msg: "Aggregate {{ item.name }} is online."
+      loop: "{{ aggregate_output.ontap_info['storage/aggregates'].records }}"
+      loop_control:
+         label: "{{ item.name }}"
