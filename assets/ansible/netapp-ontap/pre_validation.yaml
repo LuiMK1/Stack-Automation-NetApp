@@ -57,7 +57,7 @@
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
-        command: 'storage shelf'
+        command: storage/shelf
         verb: GET
         validate_certs: false
       register: shelf_output
