@@ -52,17 +52,18 @@
       loop_control:
         label: "{{ item.name }}"
 
-    - name: Run ONTAP REST CLI command
+    - name: Get Disk Shelf Information
       netapp.ontap.na_ontap_rest_cli:
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
         command: storage/shelf
+        params:
+           fields: state
         verb: GET
         validate_certs: false
       register: shelf_output
     
-
     - name: Print the disk shelf information
       ansible.builtin.debug:
         var: shelf_output
