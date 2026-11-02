@@ -111,13 +111,15 @@
         fields: 
           - state 
           - scope
+        parameters:
+          role: cluster
         https: true
         validate_certs: false
       register: lif_output
 
-    - name: Print Logical Interface Information
+    - name: Print the lif information
       ansible.builtin.debug:
-          var: lif_output
+        var: lif_output
 
     - name: Verify that all cluster LIFs are up
       ansible.builtin.assert:
