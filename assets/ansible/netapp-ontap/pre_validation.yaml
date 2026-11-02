@@ -109,7 +109,7 @@
         gather_subset:
         - network/ip/interfaces
         fields: 
-          - '*'
+          - scope, state
         https: true
         validate_certs: false
       register: lif_output
@@ -117,3 +117,13 @@
     - name: Print Logical Interface Information
       ansible.builtin.debug:
           var: lif_output
+
+    - name: Verify that all cluster LIFs are up
+      ansible.builtin.assert:
+        that:
+          - item.state == 'up'
+        fail_msg: "Cluster LIF {{ item.name }} is not up! Current state: {{ item.state }}"
+        success_msg: "Cluster LIF {{ item.name }} is up."
+      loop: "{{ lif_output.ontap_info['network/ip/interfaces'].records | selectattr('scope', 'equalto', 'cluster') | list }}"
+      loop_control:
+        label: "{{ item.name }}"
