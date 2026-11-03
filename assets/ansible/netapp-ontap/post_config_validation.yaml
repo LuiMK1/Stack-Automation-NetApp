@@ -48,27 +48,37 @@
 
     - name: Send a test to AutoSupport
       netapp.ontap.na_ontap_autosupport_invoke:
-        autosupport_message: "this is a test"
+        autosupport_message: "Ansible Verification Test"
         type: all
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
         https: true
         validate_certs: false
-    
-    - name: Wait for AutoSupport delivery status
-      netapp.ontap.na_ontap_wait_for_condition:
+
+    - name: Get AutoSupport message status
+      netapp.ontap.na_ontap_rest_info:
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
         https: true
         validate_certs: false
-        polling_interval: 10
-        timeout: 120
-        conditions:
-          - query: "support/autosupport/messages"
-            field: "status"
-            value: "sent_successful"
+        gather_subset:
+          - support/autosupport/messages
+        query:
+          order_by: "index desc"
+          max_records: 1
+      register: latest_asup
+
+    - name: Fail playbook if the AutoSupport transmission failed
+      ansible.builtin.fail:
+          msg: "AutoSupport failed with error: {{ latest_asup.ontap_info['support/autosupport/messages'].records[0].error.message | default('Unknown error') }}"
+      when: latest_asup.ontap_info['support/autosupport/messages'].records[0].status in ['transmission_failed', 'collection_failed']
+
+    - name: Confirm Success
+      ansible.builtin.debug:
+        msg: "AutoSupport successfully passed with status: {{ latest_asup.ontap_info['support/autosupport/messages'].records[0].status }}"
+      when: latest_asup.ontap_info['support/autosupport/messages'].records[0].status == 'sent_successful'
 
     - name: Get the event logs
       netapp.ontap.na_ontap_rest_cli:
