@@ -80,7 +80,7 @@
         that:
           - latest_item.status == 'sent_successful'
         fail_msg: "AutoSupport FAILED! Status: {{ latest_item.status }}. Error: {{ latest_item.error.message | default('No error details provided') }}"
-      success_msg: "AutoSupport PASSED! Status: {{ latest_item.status }}"
+        success_msg: "AutoSupport PASSED! Status: {{ latest_item.status }}"
       vars:
         latest_item: "{{ all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first }}"
 
