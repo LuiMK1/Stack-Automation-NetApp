@@ -16,10 +16,6 @@
         validate_certs: false
       register: health_status
 
-    - name: Print the health status
-      ansible.builtin.debug:
-        var: health_status
-
     - name: Verify system health status is ok
       ansible.builtin.assert:
         that:
@@ -72,7 +68,7 @@
       register: all_asups
       until: >
         (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).state not in ['collection_in_progress', 'queued', 'transmitting']
-      retries: 12
+      retries: 100
       delay: 10
 
     - name: Verify AutoSupport test status
