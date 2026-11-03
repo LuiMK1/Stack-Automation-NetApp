@@ -48,3 +48,17 @@
           - health_alert.msg.num_records == 0
         fail_msg: "Health alerts found! Count: {{ health_alert.msg.num_records }}"
         success_msg: "No health alerts found."
+
+    - name: Get the event logs
+      netapp.ontap.na_ontap_rest_cli:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        command: event/log/show
+        verb: GET
+        validate_certs: false
+      register: event_log
+  
+    - name: Print Event logs
+      ansible.builtin.debug:
+        var: event_log
