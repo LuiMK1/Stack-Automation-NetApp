@@ -65,10 +65,16 @@
         validate_certs: false
         gather_subset:
           - support/autosupport/messages
-        query:
+        fields:
+          - '*'
+        parameters:
           order_by: "index desc"
           max_records: 1
       register: latest_asup
+    
+    - name: print latest asup
+      ansible.builtin.debug:
+        var: latest_asup
 
     - name: Fail playbook if the AutoSupport transmission failed
       ansible.builtin.fail:
