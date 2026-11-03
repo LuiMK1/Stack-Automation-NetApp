@@ -56,6 +56,8 @@
         password: "{{ ontap_password }}"
         command: event/log
         verb: GET
+        params:
+        severity: "emergency,alert,error"
         validate_certs: false
       register: event_log
   
