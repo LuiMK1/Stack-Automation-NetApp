@@ -53,8 +53,8 @@
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
-      https: true
-      validate_certs: false
+        https: true
+        validate_certs: false
 
     - name: Get the event logs
       netapp.ontap.na_ontap_rest_cli:
