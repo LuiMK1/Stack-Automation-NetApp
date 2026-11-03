@@ -68,7 +68,7 @@
       register: all_asups
       until: >
         (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).state not in ['collection_in_progress', 'queued', 'transmitting']
-      retries: 100
+      retries: 30
       delay: 10
 
     - name: Verify AutoSupport test status
