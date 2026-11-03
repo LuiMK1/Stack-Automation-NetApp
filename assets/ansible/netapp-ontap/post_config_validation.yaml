@@ -75,7 +75,7 @@
 
     - name: print asup
       ansible.builtin.debug:
-        var: (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first
+        var: all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first
 
     - name: Verify AutoSupport test status
       ansible.builtin.assert:
