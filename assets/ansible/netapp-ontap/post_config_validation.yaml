@@ -44,7 +44,7 @@
 
     - name: Send a test to AutoSupport
       netapp.ontap.na_ontap_autosupport_invoke:
-        autosupport_message: "Ansible Verification Test"
+        autosupport_message: "{{ autosupport_message }}"
         type: all
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"

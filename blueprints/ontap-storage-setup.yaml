@@ -120,6 +120,7 @@ customization:
               - name: autosupport_from_address
               - name: autosupport_to_addresses
               - name: autosupport_proxy_url
+              - name: autosupport_message
           - name: ONTAP Licenses
             inputs:
               - name: legacy_license_keys
@@ -210,6 +211,10 @@ inputs:
     type: string
     default: ""
     description: Optional AutoSupport proxy URL. Leave empty to omit it.
+  autosupport_message:
+    type: string
+    default: "FlexPod ONTAP Storage Configuration completed"
+    description: Text to be passed for the AutoSupport test.
   legacy_license_keys:
     type: string
     sensitive: true
@@ -595,7 +600,7 @@ grains:
   
   post_config_validation:
     kind: ansible
-    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" and .inputs.autosupport_message != "" %}true{% else %}false{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp-PostVal
@@ -606,3 +611,4 @@ grains:
         - ontap_hostname: '{{ .inputs.ontap_hostname }}'
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
+        - autosupport_message: '{{ .inputs.autosupport_message }}'
