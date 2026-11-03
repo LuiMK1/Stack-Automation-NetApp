@@ -37,6 +37,14 @@
         validate_certs: false
       register: health_alert
 
-    - name: Print health alerts
+    - name: Print health alert records if any exist
       ansible.builtin.debug:
-        var: health_alert
+        var: health_alert.msg.records
+      when: health_alert.msg.num_records != 0
+
+    - name: Verify there are no health alerts
+      ansible.builtin.assert:
+        that:
+          - health_alert.msg.num_records == 0
+        fail_msg: "Health alerts found! Count: {{ health_alert.msg.num_records }}"
+        success_msg: "No health alerts found."
