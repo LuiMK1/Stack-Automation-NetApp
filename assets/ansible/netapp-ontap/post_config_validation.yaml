@@ -11,7 +11,7 @@
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
-        command: storage/shelf
+        command: system/health
         verb: GET
         validate_certs: false
       register: health_status
