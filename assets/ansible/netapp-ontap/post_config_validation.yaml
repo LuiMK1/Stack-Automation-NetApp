@@ -56,7 +56,7 @@
         https: true
         validate_certs: false
 
-    - name: Get AutoSupport message status
+    - name: Wait for AutoSupport collection and transmission to finish
       netapp.ontap.na_ontap_rest_info:
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
@@ -67,20 +67,20 @@
           - support/autosupport/messages
         fields:
           - 'index'
-          - 'error'
           - 'state'
+          - 'error'
       register: all_asups
-
-    - name: Print the status of the AutoSupport message
-      ansible.builtin.debug:
-        var: (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true)) | first
+      until: >
+        (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).status not in ['collection_in_progress', 'queued', 'transmitting']
+      retries: 12
+      delay: 10
 
     - name: Verify AutoSupport test status
       ansible.builtin.assert:
         that:
           - latest_item.status == 'sent_successful'
-        fail_msg: "AutoSupport FAILED! Status: {{ latest_item.status }}. Error: {{ latest_item.error.message | default('No error details provided') }}"
-        success_msg: "AutoSupport PASSED! Status: {{ latest_item.status }}"
+        fail_msg: "AutoSupport FAILED! Status: {{ latest_item.state }}. Error: {{ latest_item.error.message | default('No error details provided') }}"
+        success_msg: "AutoSupport PASSED! Status: {{ latest_item.state }}"
       vars:
         latest_item: "{{ all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first }}"
 
