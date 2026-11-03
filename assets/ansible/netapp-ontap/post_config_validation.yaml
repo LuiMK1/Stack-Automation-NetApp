@@ -62,10 +62,11 @@
         gather_subset:
           - support/autosupport/messages
         fields:
-          #- 'index'
-          #- 'state'
-          #- 'error'
-          - "*"
+          - 'index'
+          - 'state'
+          - 'error'
+          - 'subject'
+          - 'generated_on'
       register: all_asups
       until: >
         (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).state not in ['collection_in_progress', 'queued', 'transmitting']
