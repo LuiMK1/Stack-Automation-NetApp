@@ -71,7 +71,7 @@
           - 'error'
       register: all_asups
       until: >
-        (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).status not in ['collection_in_progress', 'queued', 'transmitting']
+        (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).state not in ['collection_in_progress', 'queued', 'transmitting']
       retries: 12
       delay: 10
 
