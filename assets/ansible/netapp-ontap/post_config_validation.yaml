@@ -26,3 +26,17 @@
           - health_status.msg.status == 'ok'
         fail_msg: "System health status is not ok! Current status: {{ health_status.msg.status }}"
         success_msg: "System health status is ok."
+
+    - name: Get System health alert
+      netapp.ontap.na_ontap_rest_cli:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        command: system/health/alert
+        verb: GET
+        validate_certs: false
+      register: health_alert
+
+    - name: Print health alerts
+      ansible.builtin.debug:
+        var: health_alert
