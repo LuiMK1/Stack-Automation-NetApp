@@ -39,12 +39,12 @@
 
     - name: Verify there are no health alerts
       ansible.builtin.assert:
-      that:
-        - health_alert.msg.num_records == 0
-      fail_msg: >
-        Health alerts found! Count: {{ health_alert.msg.num_records }}.
-        Records: {{ health_alert.msg.records | to_nice_json }}
-      success_msg: "No health alerts found."
+        that:
+          - health_alert.msg.num_records == 0
+        fail_msg: >
+          Health alerts found! Count: {{ health_alert.msg.num_records }}.
+          Records: {{ health_alert.msg.records | to_nice_json }}
+        success_msg: "No health alerts found."
 
 
     - name: Get the event logs
@@ -61,10 +61,10 @@
   
     - name: Verify there are no error/emergency/alert severity events
       ansible.builtin.assert:
-      that:
-        - event_log.msg.num_records == 0
-      fail_msg: >
-        Events of severity error/emergency/alert are present! 
-        Count: {{ event_log.msg.num_records }}. 
-        Details: {{ event_log }}
-      success_msg: "No error/emergency/alert severity events found."
+        that:
+          - event_log.msg.num_records == 0
+        fail_msg: >
+          Events of severity error/emergency/alert are present! 
+          Count: {{ event_log.msg.num_records }}. 
+          Details: {{ event_log }}
+        success_msg: "No error/emergency/alert severity events found."
