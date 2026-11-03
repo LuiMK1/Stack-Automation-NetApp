@@ -19,3 +19,10 @@
     - name: Print the health status
       ansible.builtin.debug:
         var: health_status
+
+    - name: Verify system health status is ok
+      ansible.builtin.assert:
+        that:
+          - health_status.msg.status == 'ok'
+        fail_msg: "System health status is not ok! Current status: {{ health_status.msg.status }}"
+        success_msg: "System health status is ok."
