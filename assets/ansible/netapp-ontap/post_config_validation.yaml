@@ -46,6 +46,15 @@
           Records: {{ health_alert.msg.records | to_nice_json }}
         success_msg: "No health alerts found."
 
+    - name: Send a test to AutoSupport
+      netapp.ontap.na_ontap_autosupport_invoke:
+        autosupport_message: "this is a test"
+        type: all
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+      https: true
+      validate_certs: false
 
     - name: Get the event logs
       netapp.ontap.na_ontap_rest_cli:
@@ -67,4 +76,4 @@
           Events of severity error/emergency/alert are present! 
           Count: {{ event_log.msg.num_records }}. 
           Details: {{ event_log }}
-        success_msg: "No error/emergency/alert severity events found."
+        success_msg: "No error/emergency/alert severity events found."  
