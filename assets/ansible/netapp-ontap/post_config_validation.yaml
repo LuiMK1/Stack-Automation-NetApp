@@ -52,6 +52,10 @@
         https: true
         validate_certs: false
 
+    - name: Pause 30 seconds after sending AutoSupport message
+      ansible.builtin.pause:
+        seconds: 30
+
     - name: Wait for AutoSupport collection and transmission to finish
       netapp.ontap.na_ontap_rest_info:
         hostname: "{{ ontap_hostname }}"
@@ -74,7 +78,7 @@
       delay: 2
       ignore_errors: true
 
-    - name: print asup
+    - name: Print the Auto support test status
       ansible.builtin.debug:
         var: all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first
 
