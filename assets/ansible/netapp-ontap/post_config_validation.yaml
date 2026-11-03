@@ -68,13 +68,13 @@
       register: all_asups
       until: >
         (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).state not in ['collection_in_progress', 'queued', 'transmitting']
-      retries: 30
-      delay: 10
+      retries: 1
+      delay: 5
       ignore_errors: true
 
     - name: print asup
       ansible.builtin.debug:
-        var: all_asup
+        var: all_asups
 
     - name: Verify AutoSupport test status
       ansible.builtin.assert:
