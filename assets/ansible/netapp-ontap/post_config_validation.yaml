@@ -66,25 +66,23 @@
         gather_subset:
           - support/autosupport/messages
         fields:
-          - '*'
-        parameters:
-          order_by: "index desc"
-          max_records: 1
-      register: latest_asup
-    
-    - name: print latest asup
-      ansible.builtin.debug:
-        var: latest_asup
+          - 'index'
+          - 'error'
+          - 'state'
+      register: all_asups
 
-    - name: Fail playbook if the AutoSupport transmission failed
-      ansible.builtin.fail:
-          msg: "AutoSupport failed with error: {{ latest_asup.ontap_info['support/autosupport/messages'].records[0].error.message | default('Unknown error') }}"
-      when: latest_asup.ontap_info['support/autosupport/messages'].records[0].status in ['transmission_failed', 'collection_failed']
-
-    - name: Confirm Success
+    - name: Print the status of the AutoSupport message
       ansible.builtin.debug:
-        msg: "AutoSupport successfully passed with status: {{ latest_asup.ontap_info['support/autosupport/messages'].records[0].status }}"
-      when: latest_asup.ontap_info['support/autosupport/messages'].records[0].status == 'sent_successful'
+        var: (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true)) | first
+
+    - name: Verify AutoSupport test status
+      ansible.builtin.assert:
+        that:
+          - latest_item.status == 'sent_successful'
+        fail_msg: "AutoSupport FAILED! Status: {{ latest_item.status }}. Error: {{ latest_item.error.message | default('No error details provided') }}"
+      success_msg: "AutoSupport PASSED! Status: {{ latest_item.status }}"
+      vars:
+        latest_item: "{{ all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first }}"
 
     - name: Get the event logs
       netapp.ontap.na_ontap_rest_cli:
