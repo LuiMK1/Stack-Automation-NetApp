@@ -62,25 +62,26 @@
         gather_subset:
           - support/autosupport/messages
         fields:
-          - 'index'
-          - 'state'
-          - 'error'
+          #- 'index'
+          #- 'state'
+          #- 'error'
+          - "*"
       register: all_asups
       until: >
         (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).state not in ['collection_in_progress', 'queued', 'transmitting']
       retries: 1
-      delay: 5
+      delay: 2
       ignore_errors: true
 
     - name: print asup
       ansible.builtin.debug:
-        var: all_asups
+        var: (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first
 
     - name: Verify AutoSupport test status
       ansible.builtin.assert:
         that:
           - latest_item.state == 'sent_successful' or latest_item.state == 'collection_in_progress'
-        fail_msg: "AutoSupport FAILED! Status: {{ latest_item.state }}. Error: {{ latest_item.error.message}}"
+        fail_msg: "AutoSupport FAILED! Status: {{ latest_item.state }}. Error: {{ latest_item}}"
         success_msg: >-
           {% if latest_item.state == 'collection_in_progress' %}
           Timeout exceeded - AutoSupport collection is still in progress. Manually track this AutoSupport message. Details: {{ latest_item | to_nice_json }}
