@@ -55,6 +55,20 @@
         password: "{{ ontap_password }}"
         https: true
         validate_certs: false
+    
+    - name: Wait for AutoSupport delivery status
+      netapp.ontap.na_ontap_wait_for_condition:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        polling_interval: 10
+        timeout: 120
+        conditions:
+          - query: "support/autosupport/messages"
+            field: "status"
+            value: "sent_successful"
 
     - name: Get the event logs
       netapp.ontap.na_ontap_rest_cli:
