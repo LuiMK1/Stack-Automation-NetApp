@@ -85,7 +85,7 @@
     - name: Verify AutoSupport test status
       ansible.builtin.assert:
         that:
-          - latest_item.state != 'collection_failed' or latest_item.state == 'transmission_failed'
+          - latest_item.state != 'collection_failed' and latest_item.state != 'transmission_failed'
         fail_msg: "AutoSupport FAILED! Status: {{ latest_item.state }}. Error: {{ latest_item}}"
         success_msg: >-
           {% if latest_item.state == 'sent_successful' %}
