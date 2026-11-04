@@ -76,7 +76,6 @@
         ((all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first)['state']) not in ['collection_failed', 'sent_successful', 'transmission_failed', 'ondemand_ignore']
       retries: 30
       delay: 10
-      ignore_errors: true
 
     - name: Print the Auto support test status
       ansible.builtin.debug:
