@@ -603,7 +603,7 @@ grains:
     when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" and .inputs.autosupport_message != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: Stack-Automation-NetApp-PostVal
         path: assets/ansible/netapp-ontap/post_config_validation.yaml
       agent:
         name: '{{ .inputs.agent }}'

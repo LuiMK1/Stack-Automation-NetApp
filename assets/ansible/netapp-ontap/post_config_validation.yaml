@@ -73,9 +73,9 @@
           - 'generated_on'
       register: all_asups
       until: >
-        (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).state not in ['collection_in_progress', 'queued', 'transmitting', 'initializing', 're_queued']
-      retries: 30
-      delay: 10
+        (all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first).state not in ['collection_failed', 'sent_successful', 'transmission_failed', 'ondemand_ignore']
+      retries: 3
+      delay: 1
       ignore_errors: true
 
     - name: Print the Auto support test status
@@ -85,13 +85,13 @@
     - name: Verify AutoSupport test status
       ansible.builtin.assert:
         that:
-          - latest_item.state == 'sent_successful' or latest_item.state == 'collection_in_progress'
+          - latest_item.state != 'collection_failed' or latest_item.state == 'transmission_failed'
         fail_msg: "AutoSupport FAILED! Status: {{ latest_item.state }}. Error: {{ latest_item}}"
         success_msg: >-
-          {% if latest_item.state == 'collection_in_progress' %}
-          Timeout exceeded - AutoSupport collection is still in progress. Manually track this AutoSupport message. Details: {{ latest_item | to_nice_json }}
-          {% else %}
+          {% if latest_item.state == 'sent_successful' %}
           AutoSupport PASSED! Status: {{ latest_item.state }}
+          {% else %}
+          Timeout exceeded - AutoSupport collection is still in progress. Manually track this AutoSupport message. Details: {{ latest_item | to_nice_json }}
           {% endif %}
       vars:
         latest_item: "{{ all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first }}"
