@@ -105,7 +105,7 @@ customization:
             inputs:
               - name: node_specs
                 type: object
-                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name,NFS LIF Address,NFS LIF Netmask,iSCSI LIF A Name,iSCSI LIF A Address,iSCSI LIF A Netmask,iSCSI LIF B Name,iSCSI LIF B Address,iSCSI LIF B Netmask
+                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name,NFS LIF Address,NFS LIF Netmask,iSCSI LIF A Name,iSCSI LIF A Address,iSCSI LIF A Netmask
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
