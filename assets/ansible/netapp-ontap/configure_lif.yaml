@@ -8,7 +8,7 @@
 
       - name: Print all variables in scope
         ansible.builtin.debug:
-        var: vars
+          var: vars
       
    # - name: Configure LIFs for NFS access
      # netapp.ontap.na_ontap_interface:
