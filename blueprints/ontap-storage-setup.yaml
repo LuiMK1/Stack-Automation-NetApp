@@ -105,7 +105,7 @@ customization:
             inputs:
               - name: node_specs
                 type: object
-                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count
+                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name, NFS LIF IP, NFS LIF Netmask
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
@@ -141,6 +141,34 @@ customization:
               - name: snmp_priv_protocol_fips
                 visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}false{% endif %}'
               - name: snmp_priv_password
+          - name: Network Configuration
+            inputs:
+              - name: ifgrp_name
+              - name: ifgrp_mode
+              - name: ipspace_name
+              - name: ib_mgmt_vlan_name
+              - name: ib_mgmt_vlan_id
+              - name: nfs_vlan_name
+              - name: nfs_vlan_id
+              - name: iscsi_a_vlan_name
+              - name: iscsi_a_vlan_id
+              - name: iscsi_b_vlan_name
+              - name: iscsi_b_vlan_id
+          - name: SVM Configuration
+            inputs:
+              - name: svm_name
+              - name: allowed_protocols
+              - name: job_name
+              - name: job_minutes
+              - name: vsadmin_password
+              - name: svm_login_banner
+              - name: svm_mgmt_lif_name
+              - name: svm_mgmt_lif_address
+              - name: svm_mgmt_lif_netmask
+              - name: svm_mgmt_lif_gateway
+              - name: svm_dns_servers
+              - name: svm_dns_domain
+
 
 inputs:
   agent:
@@ -278,7 +306,209 @@ inputs:
     type: string
     default: ""
     description: Login banner text.
-
+  ifgrp_name:
+    type: string
+    default: a0a
+    description: >-
+      Interface group created on every node that lists data ports. Defaults to
+      a0a. Use a name such as a0a or a0b: the letter a, a number from 0 to 999
+      with no leading zeros, and one lowercase letter. That node's data ports
+      are added to the group. Traffic is distributed by port, and the group
+      MTU is set to 9000. In-band management, NFS, and iSCSI VLANs are created
+      on this interface group when those VLANs are filled in. This task uses
+      the interface group name and the node data ports. Clear this field to
+      skip the interface group.
+  ifgrp_mode:
+    type: string
+    default: multimode_lacp
+    allowed-values: ["multimode_lacp", "multimode", "singlemode"]
+    description: >-
+      Interface group mode. Defaults to multimode_lacp. multimode_lacp bundles
+      the member ports with LACP, multimode bundles them without LACP, and
+      singlemode keeps one port active and uses the others for failover.
+      Applied when the group is created.
+  ipspace_name:
+    type: string
+    default: ""
+    description: >-
+      IPspace for the in-band management, NFS, and iSCSI broadcast domains and
+      VLANs. Example: AA02-OCP. The name starts with a letter or underscore.
+      Leave this blank to skip IPspace, broadcast domain, and VLAN creation.
+      The interface group task does not read this field. The SVM is created
+      in this IPspace when an SVM name is set.
+  ib_mgmt_vlan_name:
+    type: string
+    default: ""
+    description: >-
+      In-band management VLAN name. This name is also the broadcast domain
+      name. Example: OCP-BareMetal-MGMT. The broadcast domain MTU is 1500.
+      Leave this blank to skip the in-band management broadcast domain.
+      The VLAN ID is used only for the VLAN interface.  
+  ib_mgmt_vlan_id:
+    type: string
+    default: ""
+    description: >-
+      In-band management VLAN ID, from 1 to 4094. Example: 1022. ONTAP names
+      the interface <interface group>-<VLAN ID>, for example a0a-1022. Leave
+      this blank to skip the in-band management VLAN interface. The broadcast
+      domain is still created when the VLAN name is set.
+  nfs_vlan_name:
+    type: string
+    default: ""
+    description: >-
+      NFS VLAN name. Storage protocol NFS. This name is also the broadcast
+      domain name. Example: OCP-NFS. The broadcast domain MTU is 9000. Leave
+      this blank to skip the NFS broadcast domain. The VLAN ID is used only
+      for the VLAN interface.
+  nfs_vlan_id:
+    type: string
+    default: ""
+    description: >-
+      NFS VLAN ID, from 1 to 4094. Example: 3052. Leave this blank to skip the
+      NFS VLAN interface. The broadcast domain is still created when the VLAN
+      name is set.
+  iscsi_a_vlan_name:
+    type: string
+    default: ""
+    description: >-
+      iSCSI VLAN name for fabric A. Storage protocol iSCSI. This name is also
+      the broadcast domain name. Example: OCP-iSCSI-A. The broadcast domain
+      MTU is 9000. Leave this blank to skip the fabric A broadcast domain.
+      The VLAN ID is used only for the VLAN interface.
+  iscsi_a_vlan_id:
+    type: string
+    default: ""
+    description: >-
+      iSCSI VLAN ID for fabric A, from 1 to 4094. Example: 3012. Leave this
+      blank to skip the fabric A VLAN interface. The broadcast domain is still
+      created when the VLAN name is set.
+  iscsi_b_vlan_name:
+    type: string
+    default: ""
+    description: >-
+      iSCSI VLAN name for fabric B. Storage protocol iSCSI. This name is also
+      the broadcast domain name. Example: OCP-iSCSI-B. The broadcast domain
+      MTU is 9000. Leave this blank to skip the fabric B broadcast domain.
+      The VLAN ID is used only for the VLAN interface.
+  iscsi_b_vlan_id:
+    type: string
+    default: ""
+    description: >-
+      iSCSI VLAN ID for fabric B, from 1 to 4094. Example: 3022. Leave this
+      blank to skip the fabric B VLAN interface. The broadcast domain is still
+      created when the VLAN name is set.
+  svm_name:
+    type: string
+    default: ""
+    description: >-
+      SVM name. Example: AA02-OCP-SVM. The name starts with a letter or
+      underscore. The SVM is created in the IPspace from Network Configuration,
+      and the aggregate names from the node rows are assigned to it. Leave
+      this blank to skip SVM creation, the protocol services, the load-sharing
+      SnapMirror, the SVM management LIF, the default route,
+      vsadmin, the SVM login banner, and SVM DNS.
+  allowed_protocols:
+    type: string
+    style: multi-select
+    default: "[]"
+    allowed-values: ["nfs", "iscsi"]
+    description: >-
+      Protocols allowed on the SVM. The dropdown starts empty. Choose nfs,
+      iscsi, or both. nfs starts the NFS service with NFSv3 and NFSv4.1
+      enabled and UDP disabled. iscsi starts the iSCSI service. At least one
+      protocol is required when the SVM name is set.
+  job_name:
+    type: string
+    default: 15min
+    description: >-
+      Job schedule name used by the load-sharing SnapMirror of the SVM root
+      volume. Defaults to 15min. The name starts with a letter, number, or
+      underscore. Both this name and the job minutes are required. Clear both
+      to skip the mirror volumes, the schedule, and the SnapMirror
+      relationship. Set only one and the load-sharing SnapMirror task fails
+      at the schedule. The SVM task is already done.
+  job_minutes:
+    type: string
+    default: "0,15,30,45"
+    description: >-
+      Minutes of each hour when the job schedule runs, separated by commas.
+      Defaults to 0,15,30,45, which runs at minute 0, 15, 30, and 45. Other
+      15-minute examples are 5,20,35,50 and 7,22,37,52. Each value is a whole
+      number from 0 to 59. Both the job name and these minutes are required.
+      Clear both to skip the mirror volumes, the schedule, and the SnapMirror
+      relationship. Set only one and the load-sharing SnapMirror task fails
+      at the schedule. The SVM task is already done.
+  vsadmin_password:
+    type: string
+    sensitive: true
+    default: ""
+    description: >-
+      Password for the SVM vsadmin account. The value is masked. When this is
+      filled in, the password is set and vsadmin is unlocked for http, ontapi,
+      and ssh. Leave this blank to leave vsadmin unchanged.
+  svm_login_banner:
+    type: string
+    default: ""
+    description: Login banner text for the SVM. Leave this blank to skip the SVM banner.
+  svm_mgmt_lif_name:
+    type: string
+    default: ""
+    description: >-
+      Name of the SVM management LIF. One SVM has one management LIF, so this
+      is a single field. Example: svm-mgmt. The name starts with a letter or
+      underscore. The LIF is created on the node that hosts the SVM root
+      volume, with service policy default-management, admin status up,
+      failover policy broadcast-domain-wide, and auto-revert enabled. The
+      home port is the in-band management VLAN interface, for example
+      a0a-2235. Fill this in together with svm_mgmt_lif_address and
+      svm_mgmt_lif_netmask. The interface group name and the in-band
+      management VLAN name and VLAN ID must be filled in as well. At least
+      one node row must list data ports, because that is where the home
+      port is created. With no data ports this task fails before it calls
+      the cluster. Leave any of those blank to skip the LIF.
+  svm_mgmt_lif_address:
+    type: string
+    default: ""
+    description: >-
+      IPv4 address of the SVM management LIF. Example: 10.102.2.50. Fill this
+      in together with svm_mgmt_lif_name and svm_mgmt_lif_netmask. Leave it
+      blank to skip the LIF.
+  svm_mgmt_lif_netmask:
+    type: string
+    default: ""
+    description: >-
+      Subnet mask of the SVM management LIF, in dotted decimal form. Example:
+      255.255.255.0. Fill this in together with svm_mgmt_lif_name and
+      svm_mgmt_lif_address. Leave it blank to skip the LIF.
+  svm_mgmt_lif_gateway:
+    type: string
+    default: ""
+    description: >-
+      IPv4 gateway for the SVM management LIF. Example: 10.102.2.254. This
+      becomes the SVM default route to 0.0.0.0/0 after the management LIF
+      is created. It must be different from svm_mgmt_lif_address. Leave it
+      blank to skip the default route. If the LIF is skipped, the route is
+      skipped as well. The LIF can still be created without it.
+  svm_dns_servers:
+    type: string
+    default: ""
+    description: >-
+      Comma-separated DNS server IPv4 addresses for the SVM. Example:
+      10.1.1.10,10.1.1.11. This is separate from the cluster DNS servers.
+      Fill this in together with svm_dns_domain. Leave both blank to skip SVM DNS.
+      Set only one and the SVM DNS task fails. This task runs after the
+      default route. The default route runs after the management LIF, and
+      that LIF runs after the SVM.
+  svm_dns_domain:
+    type: string
+    default: ""
+    description: >-
+      DNS domain name for the SVM. Example: example.com. This is separate
+      from the cluster DNS domain. Fill this in together with svm_dns_servers.
+      Leave both blank to skip SVM DNS. Set only one and the SVM DNS task
+      fails. This task runs after the default route. The default route runs
+      after the management LIF, and that LIF runs after the SVM.
+  
 grains:
   update_cluster_location:
     kind: ansible
@@ -589,3 +819,23 @@ grains:
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
         - cluster_login_banner: '{{ .inputs.cluster_login_banner }}'
+
+  configure_lif:
+    kind: ansible
+    #when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != "" %}true{% else %}false{% endif %}'
+    #depends-on: configure_ontap_svm, configure_vlan_interfaces
+    spec:
+      source:
+        store: SA-NetApp-LIF
+        path: assets/ansible/netapp-ontap/configure_lif.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - ifgrp_name: '{{ .inputs.ifgrp_name }}'
+        - nfs_vlan_id: '{{ .inputs.nfs_vlan_id }}'
+      
