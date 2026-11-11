@@ -37,8 +37,19 @@
   tasks:
 
       - name: Skip NFS LIF configuration when NFS is not a selected protocol
-        ansible.builtin.meta: end_play
-        when: "'nfs' not in protocol_list"
+        block:
+          - name: Report NFS protocol selection
+            ansible.builtin.debug:
+              msg: >-
+                {% if 'nfs' in protocol_list %}
+                NFS is selected. Proceeding with NFS LIF configuration.
+                {% else %}
+                NFS is not selected. Terminating NFS LIF configuration.
+                {% endif %}
+
+          - name: Terminate the play when NFS is not selected
+            ansible.builtin.meta: end_play
+            when: "'nfs' not in protocol_list"
 
       - name: Normalize node rows
         ansible.builtin.set_fact:

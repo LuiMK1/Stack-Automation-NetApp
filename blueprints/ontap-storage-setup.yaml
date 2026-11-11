@@ -822,7 +822,7 @@ grains:
 
   configure_nfs_lif:
     kind: ansible
-    #when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != "" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.nfs_vlan_id != "" %}true{% else %}false{% endif %}'
     #depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
       source:
