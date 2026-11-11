@@ -101,11 +101,11 @@ customization:
               - name: cluster_location
               - name: time_zone
               - name: cluster_login_banner
-          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. Skip NFS\ISCSI LIF details if protocol not needed. Skip otherwise. A blank row keeps Finish disabled.
+          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. Skip NFS/ISCSI LIF details if protocol not needed. Skip otherwise. A blank row keeps Finish disabled.
             inputs:
               - name: node_specs
                 type: object
-                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name,NFS LIF Address,NFS LIF Netmask,iSCSI LIF A Name,iSCSI LIF A Address,iSCSI LIF A Netmask
+                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name,NFS LIF Address,NFS LIF Netmask
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
