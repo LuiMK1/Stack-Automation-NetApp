@@ -101,7 +101,7 @@ customization:
               - name: cluster_location
               - name: time_zone
               - name: cluster_login_banner
-          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. A blank row keeps Finish disabled test.
+          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. A blank row keeps Finish disabled testnew.
             inputs:
               - name: node_specs
                 type: object
