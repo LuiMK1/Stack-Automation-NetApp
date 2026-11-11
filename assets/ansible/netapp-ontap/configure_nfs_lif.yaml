@@ -1,5 +1,5 @@
 ---
-- name: Configure LIF
+- name: Configure NFS LIFs
   hosts: localhost
   connection: local
   gather_facts: false
@@ -44,10 +44,10 @@
                 {% if 'nfs' in protocol_list %}
                 NFS is selected. Proceeding with NFS LIF configuration.
                 {% else %}
-                NFS is not selected. Terminating NFS LIF configuration.
+                NFS is not selected. Skipping NFS LIF configuration.
                 {% endif %}
 
-          - name: Terminate the play when NFS is not selected
+          - name: Skip the play when NFS is not selected
             ansible.builtin.meta: end_play
             when: "'nfs' not in protocol_list"
 
