@@ -105,7 +105,7 @@ customization:
             inputs:
               - name: node_specs
                 type: object
-                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name, NFS LIF IP, NFS LIF Netmask
+                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name, NFS LIF Address, NFS LIF Netmask
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
@@ -820,14 +820,15 @@ grains:
         - ontap_password: '{{ .inputs.ontap_password }}'
         - cluster_login_banner: '{{ .inputs.cluster_login_banner }}'
 
-  configure_lif:
+  configure_nfs_lif:
     kind: ansible
+    when: '{% if "nfs" in .inputs.allowed_protocols %}true{% else %}false{% endif %}'
     #when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != "" %}true{% else %}false{% endif %}'
     #depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
       source:
         store: SA-NetApp-LIF
-        path: assets/ansible/netapp-ontap/configure_lif.yaml
+        path: assets/ansible/netapp-ontap/configure_nfs_lif.yaml
       agent:
         name: '{{ .inputs.agent }}'
       inputs:

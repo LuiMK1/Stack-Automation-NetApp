@@ -1,0 +1,63 @@
+---
+- name: Configure LIF
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    node_rows: >-
+      {{
+        (node_specs | from_json)
+        if node_specs is string
+        else node_specs
+      }}
+
+  tasks:
+
+      - name: Normalize node rows
+        ansible.builtin.set_fact:
+          node_plan: "{{ node_plan | default([]) + [normalized_row] }}"
+        vars:
+          normalized_row:
+            node_name: "{{ item.node_name | default(item['Node Name'], true) | default('', true) | trim }}"
+            nfs_lif_name: "{{ item.nfs_lif_name | default(item['NFS LIF Name'], true) | default('', true) | trim }}"
+            nfs_lif_address: "{{ item.nfs_lif_address | default(item['NFS LIF Address'], true) | default('', true) | trim }}"
+            nfs_lif_netmask: "{{ item.nfs_lif_netmask | default(item['NFS LIF Netmask'], true) | default('', true) | trim }}"
+        loop: "{{ node_rows }}"
+        loop_control:
+          label: "{{ item.node_name | default(item['Node Name'], true) | default('unnamed row', true) }}"
+
+      - name: Validate each requested NFS LIF
+        ansible.builtin.assert:
+          that:
+            - item.node_name | length > 0
+            - item.nfs_lif_address | length > 0
+            - item.nfs_lif_netmask | length > 0
+            - item.nfs_lif_name | length > 0
+          fail_msg: >-
+            {{ item.node_name }} needs an NFS LIF IP, and a netmask
+            to configure {{ item.nfs_lif_name }}.
+        loop: "{{ node_plan }}"
+        loop_control:
+          label: "{{ item.nfs_lif_name }}"
+
+      - name: Configure LIFs for NFS access
+        netapp.ontap.na_ontap_interface:
+          state: present
+          vserver: "{{ svm_name }}"
+          service_policy: default-data-files
+          home_node: "{{ item.node_name }}"
+          home_port: "{{ ifgrp_name }}-{{ nfs_vlan_id }}"
+          address: "{{ item.nfs_lif_address }}"
+          netmask: "{{ item.nfs_lif_netmask }}"
+          interface_name: "{{ item.nfs_lif_name }}"
+          admin_status: up
+          failover_policy: broadcast-domain-wide
+          is_auto_revert: true
+          hostname: "{{ ontap_hostname }}"
+          username: "{{ ontap_username }}"
+          password: "{{ ontap_password }}"
+          https: true
+          validate_certs: false
+        loop: "{{ node_plan }}"
+        loop_control:
+          label: "{{ item.nfs_lif_name }} on {{ item.node_name }}"
