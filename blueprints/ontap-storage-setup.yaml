@@ -822,7 +822,6 @@ grains:
 
   configure_nfs_lif:
     kind: ansible
-    when: '{% if .inputs.allowed_protocols == "[\"nfs\"]" or .inputs.allowed_protocols == "[\"nfs\",\"iscsi\"]" or .inputs.allowed_protocols == "[\"iscsi\",\"nfs\"]" %}true{% else %}false{% endif %}'
     #when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != "" %}true{% else %}false{% endif %}'
     #depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
@@ -839,4 +838,5 @@ grains:
         - node_specs: '{{ .inputs.node_specs }}'
         - ifgrp_name: '{{ .inputs.ifgrp_name }}'
         - nfs_vlan_id: '{{ .inputs.nfs_vlan_id }}'
+        - allowed_protocols: '{{ .inputs.allowed_protocols }}'
       

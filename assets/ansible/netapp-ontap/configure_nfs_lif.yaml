@@ -10,8 +10,35 @@
         if node_specs is string
         else node_specs
       }}
+    raw_protocols: "{{ allowed_protocols | default('[]') }}"
+    decoded_protocols: >-
+      {{
+        [] if (raw_protocols | string | trim) in ['', '[]']
+        else (
+          raw_protocols | from_json
+          if raw_protocols is string and (raw_protocols | string | trim) is match('^\\[')
+          else (
+            raw_protocols if raw_protocols is not string
+            else raw_protocols.split(',')
+          )
+        )
+      }}
+    protocol_list: >-
+      {{
+        decoded_protocols
+        | map('string')
+        | map('trim')
+        | map('lower')
+        | reject('equalto', '')
+        | unique
+        | list
+      }}
 
   tasks:
+
+      - name: Skip NFS LIF configuration when NFS is not a selected protocol
+        ansible.builtin.meta: end_play
+        when: "'nfs' not in protocol_list"
 
       - name: Normalize node rows
         ansible.builtin.set_fact:
