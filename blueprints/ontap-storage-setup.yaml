@@ -101,11 +101,11 @@ customization:
               - name: cluster_location
               - name: time_zone
               - name: cluster_login_banner
-          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. A blank row keeps Finish disabled.
+          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. A blank row keeps Finish disabled and now what.
             inputs:
               - name: node_specs
                 type: object
-                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name,NFS LIF Address,NFS LIF Netmask,iSCSI A LIF Name
+                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name,NFS LIF Address,NFS LIF Netmask,iSCSI A LIF Name, iSCSI A Address, iSCSI A Netmask
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
@@ -822,7 +822,7 @@ grains:
 
   configure_nfs_lif:
     kind: ansible
-    when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.nfs_vlan_id != "" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.node_specs != "[]"  and .inputs.nfs_vlan_id != "" %}true{% else %}false{% endif %}'
     #depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
       source:
@@ -842,7 +842,7 @@ grains:
 
   configure_iscsi_lif:
     kind: ansible
-    when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.iscsi_a_vlan_id != "" and .inputs.iscsi_b_vlan_id != "" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.node_specs != "[]" and .inputs.iscsi_a_vlan_id != "" and .inputs.iscsi_b_vlan_id != "" %}true{% else %}false{% endif %}'
     #depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
       source:
