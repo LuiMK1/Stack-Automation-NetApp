@@ -83,6 +83,13 @@ customization:
       create_login_banner:
         type: grain
         position: {x: 1200, y: 800}
+      configure_nfs_lif:
+        type: grain
+        position: {x: 80, y: 1040}
+      configure_iscsi_lif:
+        type: grain
+        position: {x: 360, y: 1040}
+
   launch-form:
     categories:
       - name: ONTAP Storage Setup
@@ -105,7 +112,7 @@ customization:
             inputs:
               - name: node_specs
                 type: object
-                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name,NFS LIF Address,NFS LIF Netmask,iSCSI A LIF Name, iSCSI A Address, iSCSI A Netmask
+                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name,NFS LIF Address,NFS LIF Netmask,iSCSI A LIF Name,iSCSI A Address,iSCSI A Netmask
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
@@ -202,7 +209,7 @@ inputs:
       One row per node. The node name is entered once and applies to that node's
       service processor, data ports, and one aggregate. Data Ports is a
       comma-separated list, for example e5a,e5b. To skip service-processor,
-      aggregate, and data-port tasks, delete every row. A blank row keeps Finish disabled.
+      aggregate, and data-port tasks, delete every row. A blank row keeps Finish disabled.test
   dns_domain_name:
     type: string
     default: ""
