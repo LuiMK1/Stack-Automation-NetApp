@@ -99,7 +99,7 @@ customization:
             icon: list
             inputs:
               - name: agent
-          - name: Cluster Details test
+          - name: Cluster Details
             inputs:
               - name: ontap_hostname
               - name: ontap_username
