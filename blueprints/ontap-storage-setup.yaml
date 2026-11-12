@@ -574,10 +574,13 @@ inputs:
       IPv4 subnet for a new rule on the SVM default export policy. Example:
       192.168.52.0/24. The rule index is 1. The protocol is nfs. Read-only,
       read-write, and superuser security are sys, and suid is allowed. Those
-      values are fixed. This task runs after the SVM task. nfs must be one of
-      the protocols selected for the SVM. If nfs is not selected, this task
-      fails. Leave this blank to skip the export policy rule. Leave the SVM
-      name blank to skip it with the SVM task.
+      values are fixed. After the rule is created, that same policy is
+      assigned to the SVM root volume. The root volume is read from the
+      cluster. SVM AA02-OCP-SVM uses root volume AA02_OCP_SVM_root. This
+      task runs after the SVM task. nfs must be one of the protocols
+      selected for the SVM. If nfs is not selected, this task fails. Leave
+      this blank to skip the export policy rule and the root volume
+      assignment. Leave the SVM name blank to skip it with the SVM task.
   audit_log_volume_name:
     type: string
     default: ""
