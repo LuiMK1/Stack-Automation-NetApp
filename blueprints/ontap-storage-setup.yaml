@@ -1,14 +1,14 @@
 spec_version: 2
 description: >-
-  ONTAP storage setup.
-  Only the cluster address, username, and password are required. A task runs
-  when its fields are filled in and stays skipped when they are left blank.
-  SSL FIPS is set on every launch and defaults to false.
-  Fibre Channel is not included.
+  Set up an ONTAP cluster and an optional SVM. Only the cluster address,
+  username, and password are required. Fill in a section to run that task,
+  or leave it blank to skip it. SSL FIPS is set on every launch and defaults
+  to false. Fibre Channel, NVMe, and S3 are not included. Open the
+  instructions for which fields start or skip each task.
 
 instructions:
   source:
-    store: Stack-Automation-NetApp
+    store: SA-NetApp
     path: instructions/ontap-storage-setup.md
 
 metadata:
@@ -29,7 +29,7 @@ customization:
       ensure_cluster_mgmt_auto_revert:
         type: grain
         position: {x: 360, y: 80}
-      delete_broadcast_domains:
+      delete_default_broadcast_domains:
         type: grain
         position: {x: 640, y: 80}
       configure_sp_network:
@@ -83,6 +83,48 @@ customization:
       create_login_banner:
         type: grain
         position: {x: 1200, y: 800}
+      disable_http_cluster_management:
+        type: grain
+        position: {x: 80, y: 1040}
+      configure_ifgrp:
+        type: grain
+        position: {x: 360, y: 1040}
+      configure_ipspace:
+        type: grain
+        position: {x: 640, y: 1040}
+      configure_broadcast_domains:
+        type: grain
+        position: {x: 920, y: 1040}
+      configure_vlan_interfaces:
+        type: grain
+        position: {x: 1200, y: 1040}
+      configure_ontap_svm:
+        type: grain
+        position: {x: 80, y: 1280}
+      configure_svm_load_sharing_snapmirror:
+        type: grain
+        position: {x: 360, y: 1280}
+      configure_svm_vsadmin:
+        type: grain
+        position: {x: 640, y: 1280}
+      configure_svm_login_banner:
+        type: grain
+        position: {x: 920, y: 1280}
+      configure_svm_mgmt_lif:
+        type: grain
+        position: {x: 1200, y: 1280}
+      configure_svm_default_route:
+        type: grain
+        position: {x: 80, y: 1520}
+      configure_svm_dns:
+        type: grain
+        position: {x: 360, y: 1520}
+      configure_nfs_export_policy:
+        type: grain
+        position: {x: 640, y: 1520}
+      configure_svm_audit_log:
+        type: grain
+        position: {x: 920, y: 1520}
   launch-form:
     categories:
       - name: ONTAP Storage Setup
@@ -141,6 +183,39 @@ customization:
               - name: snmp_priv_protocol_fips
                 visible: '{% if inputs.is_fips_enabled == "true" %}true{% else %}false{% endif %}'
               - name: snmp_priv_password
+          - name: Network Configuration
+            inputs:
+              - name: ifgrp_name
+              - name: ifgrp_mode
+              - name: ipspace_name
+              - name: ib_mgmt_vlan_name
+              - name: ib_mgmt_vlan_id
+              - name: nfs_vlan_name
+              - name: nfs_vlan_id
+              - name: iscsi_a_vlan_name
+              - name: iscsi_a_vlan_id
+              - name: iscsi_b_vlan_name
+              - name: iscsi_b_vlan_id
+          - name: SVM Configuration
+            inputs:
+              - name: svm_name
+              - name: allowed_protocols
+              - name: job_name
+              - name: job_minutes
+              - name: vsadmin_password
+              - name: svm_login_banner
+              - name: svm_mgmt_lif_name
+              - name: svm_mgmt_lif_address
+              - name: svm_mgmt_lif_netmask
+              - name: svm_mgmt_lif_gateway
+              - name: svm_dns_servers
+              - name: svm_dns_domain
+          - name: Volume Configuration
+            inputs:
+              - name: nfs_client_match
+              - name: audit_log_volume_name
+              - name: audit_log_volume_size_gb
+              - name: audit_log_aggregate
 
 inputs:
   agent:
@@ -161,8 +236,11 @@ inputs:
     type: string
     default: ""
     description: >-
-      ONTAP cluster name. Used by location and timezone. Must exactly match the
-      cluster's current name. Entering a different value renames the cluster.
+      ONTAP cluster name. Used by location, timezone, and disabling HTTP
+      cluster management. Must exactly match the cluster's current name.
+      Entering a different value renames the cluster when location or timezone
+      is set. Leave this blank to skip those tasks and leave HTTP management
+      unchanged.
   cluster_location:
     type: string
     default: ""
@@ -172,9 +250,12 @@ inputs:
     default: "[]"
     description: >-
       One row per node. The node name is entered once and applies to that node's
-      service processor, data ports, and one aggregate. Data Ports is a
-      comma-separated list, for example e5a,e5b. To skip service-processor,
-      aggregate, and data-port tasks, delete every row. A blank row keeps Finish disabled.
+      service processor, data ports, interface group, and one aggregate. Data
+      Ports is a comma-separated list, for example e5a,e5b. In-band management,
+      NFS, and iSCSI VLANs are created on the interface group of each node that
+      lists data ports. Aggregate names from these rows are assigned to the SVM
+      when an SVM name is set. To skip service-processor, aggregate, interface-group,
+      and data-port tasks, delete every row. A blank row keeps Finish disabled.
   dns_domain_name:
     type: string
     default: ""
@@ -278,6 +359,263 @@ inputs:
     type: string
     default: ""
     description: Login banner text.
+  ifgrp_name:
+    type: string
+    default: a0a
+    description: >-
+      Interface group created on every node that lists data ports. Defaults to
+      a0a. Use a name such as a0a or a0b: the letter a, a number from 0 to 999
+      with no leading zeros, and one lowercase letter. That node's data ports
+      are added to the group. Traffic is distributed by port, and the group
+      MTU is set to 9000. In-band management, NFS, and iSCSI VLANs are created
+      on this interface group when those VLANs are filled in. This task uses
+      the interface group name and the node data ports. Clear this field to
+      skip the interface group.
+  ifgrp_mode:
+    type: string
+    default: multimode_lacp
+    allowed-values: ["multimode_lacp", "multimode", "singlemode"]
+    description: >-
+      Interface group mode. Defaults to multimode_lacp. multimode_lacp bundles
+      the member ports with LACP, multimode bundles them without LACP, and
+      singlemode keeps one port active and uses the others for failover.
+      Applied when the group is created.
+  ipspace_name:
+    type: string
+    default: ""
+    description: >-
+      IPspace for the in-band management, NFS, and iSCSI broadcast domains and
+      VLANs. Example: AA02-OCP. The name starts with a letter or underscore.
+      Leave this blank to skip IPspace, broadcast domain, and VLAN creation.
+      The interface group task does not read this field. The SVM is created
+      in this IPspace when an SVM name is set.
+  ib_mgmt_vlan_name:
+    type: string
+    default: ""
+    description: >-
+      In-band management VLAN name. This name is also the broadcast domain
+      name. Example: OCP-BareMetal-MGMT. The broadcast domain MTU is 1500.
+      Leave this blank to skip the in-band management broadcast domain.
+      The VLAN ID is used only for the VLAN interface.
+  ib_mgmt_vlan_id:
+    type: string
+    default: ""
+    description: >-
+      In-band management VLAN ID, from 1 to 4094. Example: 1022. ONTAP names
+      the interface <interface group>-<VLAN ID>, for example a0a-1022. Leave
+      this blank to skip the in-band management VLAN interface. The broadcast
+      domain is still created when the VLAN name is set.
+  nfs_vlan_name:
+    type: string
+    default: ""
+    description: >-
+      NFS VLAN name. Storage protocol NFS. This name is also the broadcast
+      domain name. Example: OCP-NFS. The broadcast domain MTU is 9000. Leave
+      this blank to skip the NFS broadcast domain. The VLAN ID is used only
+      for the VLAN interface.
+  nfs_vlan_id:
+    type: string
+    default: ""
+    description: >-
+      NFS VLAN ID, from 1 to 4094. Example: 3052. Leave this blank to skip the
+      NFS VLAN interface. The broadcast domain is still created when the VLAN
+      name is set.
+  iscsi_a_vlan_name:
+    type: string
+    default: ""
+    description: >-
+      iSCSI VLAN name for fabric A. Storage protocol iSCSI. This name is also
+      the broadcast domain name. Example: OCP-iSCSI-A. The broadcast domain
+      MTU is 9000. Leave this blank to skip the fabric A broadcast domain.
+      The VLAN ID is used only for the VLAN interface.
+  iscsi_a_vlan_id:
+    type: string
+    default: ""
+    description: >-
+      iSCSI VLAN ID for fabric A, from 1 to 4094. Example: 3012. Leave this
+      blank to skip the fabric A VLAN interface. The broadcast domain is still
+      created when the VLAN name is set.
+  iscsi_b_vlan_name:
+    type: string
+    default: ""
+    description: >-
+      iSCSI VLAN name for fabric B. Storage protocol iSCSI. This name is also
+      the broadcast domain name. Example: OCP-iSCSI-B. The broadcast domain
+      MTU is 9000. Leave this blank to skip the fabric B broadcast domain.
+      The VLAN ID is used only for the VLAN interface.
+  iscsi_b_vlan_id:
+    type: string
+    default: ""
+    description: >-
+      iSCSI VLAN ID for fabric B, from 1 to 4094. Example: 3022. Leave this
+      blank to skip the fabric B VLAN interface. The broadcast domain is still
+      created when the VLAN name is set.
+  svm_name:
+    type: string
+    default: ""
+    description: >-
+      SVM name. Example: AA02-OCP-SVM. The name starts with a letter or
+      underscore. The SVM is created in the IPspace from Network Configuration,
+      and the aggregate names from the node rows are assigned to it. Leave
+      this blank to skip SVM creation, the protocol services, the load-sharing
+      SnapMirror, the SVM management LIF, the default route,
+      vsadmin, the SVM login banner, SVM DNS, the NFS export policy rule,
+      and the audit log volume.
+  allowed_protocols:
+    type: string
+    style: multi-select
+    default: "[]"
+    allowed-values: ["nfs", "iscsi"]
+    description: >-
+      Protocols allowed on the SVM. The dropdown starts empty. Choose nfs,
+      iscsi, or both. The selected license must already be installed on the
+      cluster, and every serial for that package must have
+      licenses.compliance.state compliant. When license keys or an NLF are
+      entered, this check waits for those licenses to be added. The task shows
+      the owner, serial number, installed license, expiration, and compliance
+      state before the SVM is created. nfs starts the NFS service with
+      NFSv3 and NFSv4.1 enabled and UDP disabled. iscsi starts the iSCSI
+      service. At least one protocol is required when the SVM name is set.
+  job_name:
+    type: string
+    default: 15min
+    description: >-
+      Job schedule name used by the load-sharing SnapMirror of the SVM root
+      volume. Defaults to 15min. The name starts with a letter, number, or
+      underscore. Both this name and the job minutes are required. Clear both
+      to skip the mirror volumes, the schedule, and the SnapMirror
+      relationship. Set only one and the load-sharing SnapMirror task fails
+      at the schedule. The SVM task is already done.
+  job_minutes:
+    type: string
+    default: "0,15,30,45"
+    description: >-
+      Minutes of each hour when the job schedule runs, separated by commas.
+      Defaults to 0,15,30,45, which runs at minute 0, 15, 30, and 45. Other
+      15-minute examples are 5,20,35,50 and 7,22,37,52. Each value is a whole
+      number from 0 to 59. Both the job name and these minutes are required.
+      Clear both to skip the mirror volumes, the schedule, and the SnapMirror
+      relationship. Set only one and the load-sharing SnapMirror task fails
+      at the schedule. The SVM task is already done.
+  vsadmin_password:
+    type: string
+    sensitive: true
+    default: ""
+    description: >-
+      Password for the SVM vsadmin account. The value is masked. When this is
+      filled in, the password is set and vsadmin is unlocked for http, ontapi,
+      and ssh. Leave this blank to leave vsadmin unchanged.
+  svm_login_banner:
+    type: string
+    default: ""
+    description: Login banner text for the SVM. Leave this blank to skip the SVM banner.
+  svm_mgmt_lif_name:
+    type: string
+    default: ""
+    description: >-
+      Name of the SVM management LIF. One SVM has one management LIF, so this
+      is a single field. Example: svm-mgmt. The name starts with a letter or
+      underscore. The LIF is created on the node that hosts the SVM root
+      volume, with service policy default-management, admin status up,
+      failover policy broadcast-domain-wide, and auto-revert enabled. The
+      home port is the in-band management VLAN interface, for example
+      a0a-2235. Fill this in together with svm_mgmt_lif_address and
+      svm_mgmt_lif_netmask. The interface group name and the in-band
+      management VLAN name and VLAN ID must be filled in as well. At least
+      one node row must list data ports, because that is where the home
+      port is created. With no data ports this task fails before it calls
+      the cluster. Leave any of those blank to skip the LIF.
+  svm_mgmt_lif_address:
+    type: string
+    default: ""
+    description: >-
+      IPv4 address of the SVM management LIF. Example: 10.102.2.50. Fill this
+      in together with svm_mgmt_lif_name and svm_mgmt_lif_netmask. Leave it
+      blank to skip the LIF.
+  svm_mgmt_lif_netmask:
+    type: string
+    default: ""
+    description: >-
+      Subnet mask of the SVM management LIF, in dotted decimal form. Example:
+      255.255.255.0. Fill this in together with svm_mgmt_lif_name and
+      svm_mgmt_lif_address. Leave it blank to skip the LIF.
+  svm_mgmt_lif_gateway:
+    type: string
+    default: ""
+    description: >-
+      IPv4 gateway for the SVM management LIF. Example: 10.102.2.254. This
+      becomes the SVM default route to 0.0.0.0/0 after the management LIF
+      is created. It must be different from svm_mgmt_lif_address. Leave it
+      blank to skip the default route. If the LIF is skipped, the route is
+      skipped as well. The LIF can still be created without it.
+  svm_dns_servers:
+    type: string
+    default: ""
+    description: >-
+      Comma-separated DNS server IPv4 addresses for the SVM. Example:
+      10.1.1.10,10.1.1.11. This is separate from the cluster DNS servers.
+      Fill this in together with svm_dns_domain. Leave both blank to skip SVM DNS.
+      Set only one and the SVM DNS task fails. This task runs after the
+      default route. The default route runs after the management LIF, and
+      that LIF runs after the SVM.
+  svm_dns_domain:
+    type: string
+    default: ""
+    description: >-
+      DNS domain name for the SVM. Example: example.com. This is separate
+      from the cluster DNS domain. Fill this in together with svm_dns_servers.
+      Leave both blank to skip SVM DNS. Set only one and the SVM DNS task
+      fails. This task runs after the default route. The default route runs
+      after the management LIF, and that LIF runs after the SVM.
+  nfs_client_match:
+    type: string
+    default: ""
+    description: >-
+      IPv4 subnet for a new rule on the SVM default export policy. Example:
+      192.168.52.0/24. The rule index is 1. The protocol is nfs. Read-only,
+      read-write, and superuser security are sys, and suid is allowed. Those
+      values are fixed. This task runs after the SVM task. nfs must be one of
+      the protocols selected for the SVM. If nfs is not selected, this task
+      fails. Leave this blank to skip the export policy rule. Leave the SVM
+      name blank to skip it with the SVM task.
+  audit_log_volume_name:
+    type: string
+    default: ""
+    description: >-
+      Name of the FlexVol that stores the SVM audit logs. Example: audit_log.
+      The name starts with a letter or underscore and contains only letters,
+      numbers, and underscores. The volume is mounted at /<volume name>, and
+      SVM auditing uses that same path. Fill this in together with
+      audit_log_volume_size_gb and audit_log_aggregate. Leave all three blank
+      to skip the volume, the mirror update, and auditing. Set any of them
+      and leave one blank and the audit log task fails.
+  audit_log_volume_size_gb:
+    type: string
+    default: ""
+    description: >-
+      Size of the audit log FlexVol in gigabytes. Enter the number only.
+      Example: 50. Use a whole number from 1 to 9999999. The volume is
+      online, uses export policy default, has no space guarantee, and has no
+      snapshot reserve. Fill this in together with the volume name and
+      audit_log_aggregate. Leave all three blank to skip the volume, the
+      mirror update, and auditing. Set any of them and leave one blank and
+      the audit log task fails.
+  audit_log_aggregate:
+    type: string
+    default: ""
+    description: >-
+      Aggregate that holds the audit log FlexVol. Example:
+      AA02_C800_01_SSD_CAP_1. Use an aggregate name from the node
+      configuration rows. This task runs after the SVM task. It creates the
+      FlexVol, then refreshes a load-sharing mirror set when one already
+      exists, then creates and enables SVM auditing. The volume and the
+      audit configuration do not need a SnapMirror relationship. Creating
+      the volume with a junction path updates an existing load-sharing set
+      automatically. Fill this in together with the volume name
+      and audit_log_volume_size_gb. Leave all three blank to skip the volume,
+      the mirror refresh, and auditing. Set any of them and leave one blank
+      and the task fails. Leave the SVM name blank to skip this with the
+      SVM task.
 
 grains:
   update_cluster_location:
@@ -285,7 +623,7 @@ grains:
     when: '{% if .inputs.cluster_name != "" and .inputs.cluster_location != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/update_cluster_location.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -300,7 +638,7 @@ grains:
     kind: ansible
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/ensure_cluster_mgmt_auto_revert.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -309,12 +647,12 @@ grains:
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
 
-  delete_broadcast_domains:
+  delete_default_broadcast_domains:
     kind: ansible
     spec:
       source:
-        store: Stack-Automation-NetApp
-        path: assets/ansible/netapp-ontap/delete_broadcast_domains.yaml
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/delete_default_broadcast_domains.yaml
       agent:
         name: '{{ .inputs.agent }}'
       inputs:
@@ -327,7 +665,7 @@ grains:
     when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/configure_sp_network.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -342,7 +680,7 @@ grains:
     when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/discover_disk_class.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -360,7 +698,7 @@ grains:
     depends-on: discover_disk_class
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/create_data_aggregates.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -377,7 +715,7 @@ grains:
     kind: ansible
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/zero_spare_disks.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -390,7 +728,7 @@ grains:
     kind: ansible
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/ensure_cluster_ha.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -404,7 +742,7 @@ grains:
     when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/disable_flow_control.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -418,7 +756,7 @@ grains:
     kind: ansible
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/enable_cdp.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -431,7 +769,7 @@ grains:
     kind: ansible
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/enable_lldp.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -445,7 +783,7 @@ grains:
     when: '{% if .inputs.dns_domain_name != "" and .inputs.dns_servers != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/configure_dns.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -461,7 +799,7 @@ grains:
     when: '{% if .inputs.ntp_servers != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/configure_ntp.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -475,7 +813,7 @@ grains:
     kind: ansible
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/enable_storage_failover.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -489,7 +827,7 @@ grains:
     when: '{% if .inputs.cluster_name != "" and .inputs.time_zone != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/set_timezone.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -506,7 +844,7 @@ grains:
     when: '{% if .inputs.autosupport_mail_hosts != "" and .inputs.autosupport_from_address != "" and .inputs.autosupport_to_addresses != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/configure_autosupport.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -524,7 +862,7 @@ grains:
     when: '{% if .inputs.legacy_license_keys != "" or .inputs.nlf_license_content != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/add_licenses.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -539,7 +877,7 @@ grains:
     kind: ansible
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/configure_fips.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -554,7 +892,7 @@ grains:
     when: '{% if .inputs.snmp_contact != "" or .inputs.snmp_location != "" or .inputs.snmp_v3_user != "" %}true{% else %}{% if .inputs.is_fips_enabled != "true" %}{% if .inputs.snmp_community != "" or .inputs.traphost_ip != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/configure_snmp.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -580,7 +918,7 @@ grains:
     when: '{% if .inputs.cluster_login_banner != "" %}true{% else %}false{% endif %}'
     spec:
       source:
-        store: Stack-Automation-NetApp
+        store: SA-NetApp
         path: assets/ansible/netapp-ontap/create_login_banner.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -589,3 +927,266 @@ grains:
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
         - cluster_login_banner: '{{ .inputs.cluster_login_banner }}'
+
+  disable_http_cluster_management:
+    kind: ansible
+    when: '{% if .inputs.cluster_name != "" %}true{% else %}false{% endif %}'
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/disable_http_cluster_management.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - cluster_name: '{{ .inputs.cluster_name }}'
+
+  configure_ifgrp:
+    kind: ansible
+    when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" and .inputs.ifgrp_name != "" %}true{% else %}false{% endif %}'
+    depends-on: delete_default_broadcast_domains
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_ifgrp.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - ifgrp_name: '{{ .inputs.ifgrp_name }}'
+        - ifgrp_mode: '{{ .inputs.ifgrp_mode }}'
+
+  configure_ipspace:
+    kind: ansible
+    when: '{% if .inputs.ipspace_name != "" %}true{% else %}false{% endif %}'
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_ipspace.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - ipspace_name: '{{ .inputs.ipspace_name }}'
+
+  configure_broadcast_domains:
+    kind: ansible
+    when: '{% if .inputs.ipspace_name != "" %}{% if .inputs.ib_mgmt_vlan_name != "" or .inputs.nfs_vlan_name != "" or .inputs.iscsi_a_vlan_name != "" or .inputs.iscsi_b_vlan_name != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}'
+    depends-on: configure_ipspace
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_broadcast_domains.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - ipspace_name: '{{ .inputs.ipspace_name }}'
+        - ib_mgmt_vlan_name: '{{ .inputs.ib_mgmt_vlan_name }}'
+        - nfs_vlan_name: '{{ .inputs.nfs_vlan_name }}'
+        - iscsi_a_vlan_name: '{{ .inputs.iscsi_a_vlan_name }}'
+        - iscsi_b_vlan_name: '{{ .inputs.iscsi_b_vlan_name }}'
+
+  configure_vlan_interfaces:
+    kind: ansible
+    when: '{% if .inputs.ipspace_name != "" and .inputs.ifgrp_name != "" and .inputs.node_specs != "" and .inputs.node_specs != "[]" %}{% if .inputs.ib_mgmt_vlan_name != "" and .inputs.ib_mgmt_vlan_id != "" %}true{% elsif .inputs.nfs_vlan_name != "" and .inputs.nfs_vlan_id != "" %}true{% elsif .inputs.iscsi_a_vlan_name != "" and .inputs.iscsi_a_vlan_id != "" %}true{% elsif .inputs.iscsi_b_vlan_name != "" and .inputs.iscsi_b_vlan_id != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}'
+    depends-on: configure_broadcast_domains, configure_ifgrp
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_vlan_interfaces.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - ifgrp_name: '{{ .inputs.ifgrp_name }}'
+        - ipspace_name: '{{ .inputs.ipspace_name }}'
+        - ib_mgmt_vlan_name: '{{ .inputs.ib_mgmt_vlan_name }}'
+        - ib_mgmt_vlan_id: '{{ .inputs.ib_mgmt_vlan_id }}'
+        - nfs_vlan_name: '{{ .inputs.nfs_vlan_name }}'
+        - nfs_vlan_id: '{{ .inputs.nfs_vlan_id }}'
+        - iscsi_a_vlan_name: '{{ .inputs.iscsi_a_vlan_name }}'
+        - iscsi_a_vlan_id: '{{ .inputs.iscsi_a_vlan_id }}'
+        - iscsi_b_vlan_name: '{{ .inputs.iscsi_b_vlan_name }}'
+        - iscsi_b_vlan_id: '{{ .inputs.iscsi_b_vlan_id }}'
+
+  configure_ontap_svm:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" %}true{% else %}false{% endif %}'
+    depends-on: create_data_aggregates, configure_ipspace, add_licenses
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_ontap_svm.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - ipspace_name: '{{ .inputs.ipspace_name }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - allowed_protocols: '{{ .inputs.allowed_protocols }}'
+
+  configure_svm_load_sharing_snapmirror:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" %}{% if .inputs.job_name != "" or .inputs.job_minutes != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}'
+    depends-on: configure_ontap_svm
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_svm_load_sharing_snapmirror.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - job_name: '{{ .inputs.job_name }}'
+        - job_minutes: '{{ .inputs.job_minutes }}'
+
+  configure_svm_vsadmin:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" and .inputs.vsadmin_password != "" %}true{% else %}false{% endif %}'
+    depends-on: configure_ontap_svm
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_svm_vsadmin.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - vsadmin_password: '{{ .inputs.vsadmin_password }}'
+
+  configure_svm_login_banner:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" and .inputs.svm_login_banner != "" %}true{% else %}false{% endif %}'
+    depends-on: configure_ontap_svm
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_svm_login_banner.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - svm_login_banner: '{{ .inputs.svm_login_banner }}'
+
+  configure_svm_mgmt_lif:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" and .inputs.svm_mgmt_lif_name != "" and .inputs.svm_mgmt_lif_address != "" and .inputs.svm_mgmt_lif_netmask != "" and .inputs.ifgrp_name != "" and .inputs.ib_mgmt_vlan_name != "" and .inputs.ib_mgmt_vlan_id != "" %}true{% else %}false{% endif %}'
+    depends-on: configure_ontap_svm, configure_vlan_interfaces
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_svm_mgmt_lif.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - ifgrp_name: '{{ .inputs.ifgrp_name }}'
+        - ib_mgmt_vlan_name: '{{ .inputs.ib_mgmt_vlan_name }}'
+        - ib_mgmt_vlan_id: '{{ .inputs.ib_mgmt_vlan_id }}'
+        - svm_mgmt_lif_name: '{{ .inputs.svm_mgmt_lif_name }}'
+        - svm_mgmt_lif_address: '{{ .inputs.svm_mgmt_lif_address }}'
+        - svm_mgmt_lif_netmask: '{{ .inputs.svm_mgmt_lif_netmask }}'
+
+  configure_svm_default_route:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" and .inputs.svm_mgmt_lif_name != "" and .inputs.svm_mgmt_lif_address != "" and .inputs.svm_mgmt_lif_netmask != "" and .inputs.ifgrp_name != "" and .inputs.ib_mgmt_vlan_name != "" and .inputs.ib_mgmt_vlan_id != "" and .inputs.svm_mgmt_lif_gateway != "" %}true{% else %}false{% endif %}'
+    depends-on: configure_svm_mgmt_lif
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_svm_default_route.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - svm_mgmt_lif_address: '{{ .inputs.svm_mgmt_lif_address }}'
+        - svm_mgmt_lif_gateway: '{{ .inputs.svm_mgmt_lif_gateway }}'
+
+  configure_svm_dns:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" %}{% if .inputs.svm_dns_domain != "" or .inputs.svm_dns_servers != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}'
+    depends-on: configure_svm_default_route
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_svm_dns.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - svm_dns_servers: '{{ .inputs.svm_dns_servers }}'
+        - svm_dns_domain: '{{ .inputs.svm_dns_domain }}'
+
+  configure_nfs_export_policy:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" and .inputs.nfs_client_match != "" %}true{% else %}false{% endif %}'
+    depends-on: configure_ontap_svm
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_nfs_export_policy.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - allowed_protocols: '{{ .inputs.allowed_protocols }}'
+        - nfs_client_match: '{{ .inputs.nfs_client_match }}'
+
+  configure_svm_audit_log:
+    kind: ansible
+    when: '{% if .inputs.svm_name != "" %}{% if .inputs.audit_log_volume_name != "" or .inputs.audit_log_volume_size_gb != "" or .inputs.audit_log_aggregate != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}'
+    depends-on: configure_ontap_svm
+    spec:
+      source:
+        store: SA-NetApp
+        path: assets/ansible/netapp-ontap/configure_svm_audit_log.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - audit_log_volume_name: '{{ .inputs.audit_log_volume_name }}'
+        - audit_log_volume_size_gb: '{{ .inputs.audit_log_volume_size_gb }}'
+        - audit_log_aggregate: '{{ .inputs.audit_log_aggregate }}'
