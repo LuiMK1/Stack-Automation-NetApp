@@ -203,7 +203,7 @@ inputs:
     default: ""
     description: Location string stored on the cluster.
   node_specs:
-    type: object
+    type: string
     default: "[]"
     description: >-
       One row per node. The node name is entered once and applies to that node's
