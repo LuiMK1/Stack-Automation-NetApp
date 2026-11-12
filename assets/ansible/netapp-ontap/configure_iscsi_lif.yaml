@@ -84,11 +84,11 @@
         loop_control:
           label: "{{ item.node_name }}"
 
-      - name: Configure iSCSI LIFs on fabric A
+      - name: Configure iSCSI A LIFs
         netapp.ontap.na_ontap_interface:
           state: present
           vserver: "{{ svm_name }}"
-          service_policy: default-data-blocks
+          service_policy: default-data-iscsi
           home_node: "{{ item.node_name }}"
           home_port: "{{ ifgrp_name }}-{{ iscsi_a_vlan_id }}"
           address: "{{ item.iscsi_a_lif_address }}"
@@ -106,11 +106,11 @@
         loop_control:
           label: "{{ item.iscsi_a_lif_name }} on {{ item.node_name }}"
 
-      - name: Configure iSCSI LIFs on fabric B
+      - name: Configure iSCSI B LIFs
         netapp.ontap.na_ontap_interface:
           state: present
           vserver: "{{ svm_name }}"
-          service_policy: default-data-blocks
+          service_policy: default-data-iscsi
           home_node: "{{ item.node_name }}"
           home_port: "{{ ifgrp_name }}-{{ iscsi_b_vlan_id }}"
           address: "{{ item.iscsi_b_lif_address }}"
