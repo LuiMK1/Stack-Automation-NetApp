@@ -108,7 +108,7 @@ customization:
               - name: cluster_location
               - name: time_zone
               - name: cluster_login_banner
-          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. A blank row keeps Finish disabled.
+          - name: Node configuration. One row per node and one aggregate. Fill in NFS/iSCSI LIF details based on the protocol.Skip if not needed. To skip these tasks, delete every row. A blank row keeps Finish disabled.
             inputs:
               - name: node_specs
                 type: object
@@ -830,10 +830,10 @@ grains:
   configure_nfs_lif:
     kind: ansible
     when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.node_specs != "[]"  and .inputs.nfs_vlan_id != "" %}true{% else %}false{% endif %}'
-    #depends-on: configure_ontap_svm, configure_vlan_interfaces
+    depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
       source:
-        store: SALIF
+        store: Stack-Automation-NetApp
         path: assets/ansible/netapp-ontap/configure_nfs_lif.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -850,10 +850,10 @@ grains:
   configure_iscsi_lif:
     kind: ansible
     when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.node_specs != "[]" and .inputs.iscsi_a_vlan_id != "" and .inputs.iscsi_b_vlan_id != "" %}true{% else %}false{% endif %}'
-    #depends-on: configure_ontap_svm, configure_vlan_interfaces
+    depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
       source:
-        store: SALIF
+        store: Stack-Automation-NetApp
         path: assets/ansible/netapp-ontap/configure_iscsi_lif.yaml
       agent:
         name: '{{ .inputs.agent }}'
