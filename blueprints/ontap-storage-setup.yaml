@@ -826,7 +826,7 @@ grains:
     #depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
       source:
-        store: SA-NetApp-LIF
+        store: Lif_Config
         path: assets/ansible/netapp-ontap/configure_nfs_lif.yaml
       agent:
         name: '{{ .inputs.agent }}'
@@ -846,7 +846,7 @@ grains:
     #depends-on: configure_ontap_svm, configure_vlan_interfaces
     spec:
       source:
-        store: SA-NetApp-LIF
+        store: Lif_Config
         path: assets/ansible/netapp-ontap/configure_iscsi_lif.yaml
       agent:
         name: '{{ .inputs.agent }}'
