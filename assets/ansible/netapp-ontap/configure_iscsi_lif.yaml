@@ -57,12 +57,12 @@
         vars:
           normalized_row:
             node_name: "{{ item.node_name | default(item['Node Name'], true) | default('', true) | trim }}"
-            iscsi_a_lif_name: "{{ item.iscsi_a_lif_name | default(item['iSCSI LIF A Name'], true) | default('', true) | trim }}"
-            iscsi_a_lif_address: "{{ item.iscsi_a_lif_address | default(item['iSCSI LIF A Address'], true) | default('', true) | trim }}"
-            iscsi_a_lif_netmask: "{{ item.iscsi_a_lif_netmask | default(item['iSCSI LIF A Netmask'], true) | default('', true) | trim }}"
-            iscsi_b_lif_name: "{{ item.iscsi_b_lif_name | default(item['iSCSI LIF B Name'], true) | default('', true) | trim }}"
-            iscsi_b_lif_address: "{{ item.iscsi_b_lif_address | default(item['iSCSI LIF B Address'], true) | default('', true) | trim }}"
-            iscsi_b_lif_netmask: "{{ item.iscsi_b_lif_netmask | default(item['iSCSI LIF B Netmask'], true) | default('', true) | trim }}"
+            iscsi_a_lif_name: "{{ item.iscsi_a_lif_name | default(item['iSCSI A LIF Name'], true) | default('', true) | trim }}"
+            iscsi_a_lif_address: "{{ item.iscsi_a_lif_address | default(item['iSCSI A LIF Address'], true) | default('', true) | trim }}"
+            iscsi_a_lif_netmask: "{{ item.iscsi_a_lif_netmask | default(item['iSCSI A LIF Netmask'], true) | default('', true) | trim }}"
+            iscsi_b_lif_name: "{{ item.iscsi_b_lif_name | default(item['iSCSI B LIF Name'], true) | default('', true) | trim }}"
+            iscsi_b_lif_address: "{{ item.iscsi_b_lif_address | default(item['iSCSI B LIF Address'], true) | default('', true) | trim }}"
+            iscsi_b_lif_netmask: "{{ item.iscsi_b_lif_netmask | default(item['iSCSI B LIF Netmask'], true) | default('', true) | trim }}"
         loop: "{{ node_rows }}"
         loop_control:
           label: "{{ item.node_name | default(item['Node Name'], true) | default('unnamed row', true) }}"
