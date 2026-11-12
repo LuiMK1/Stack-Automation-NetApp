@@ -84,6 +84,16 @@
         loop_control:
           label: "{{ item.node_name }}"
 
+
+      - name: Validate that iSCSI LIF names are unique
+        ansible.builtin.assert:
+          that:
+            - (node_plan | map(attribute='iscsi_a_lif_name') | list + node_plan | map(attribute='iscsi_b_lif_name') | list) | unique | list | length == node_plan | length * 2
+          fail_msg: >-
+            Each iSCSI LIF name (fabric A and B, across all nodes) must be
+            unique. Requested A names: {{ node_plan | map(attribute='iscsi_a_lif_name') | join(', ') }}.
+            Requested B names: {{ node_plan | map(attribute='iscsi_b_lif_name') | join(', ') }}.
+
       - name: Configure iSCSI A LIFs
         netapp.ontap.na_ontap_interface:
           state: present

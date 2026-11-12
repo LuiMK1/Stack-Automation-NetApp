@@ -78,6 +78,14 @@
         loop_control:
           label: "{{ item.nfs_lif_name }}"
 
+      - name: Validate that NFS LIF names are unique
+        ansible.builtin.assert:
+          that:
+            - node_plan | map(attribute='nfs_lif_name') | unique | list | length == node_plan | length
+          fail_msg: >-
+            Each NFS LIF name can appear only once. Requested LIF names:
+            {{ node_plan | map(attribute='nfs_lif_name') | join(', ') }}.
+
       - name: Configure LIFs for NFS access
         netapp.ontap.na_ontap_interface:
           state: present
