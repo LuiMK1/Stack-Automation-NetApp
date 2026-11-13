@@ -19,6 +19,12 @@
         validate_certs: false
       register: cluster_output
 
+    - name: Verify cluster readiness information is not empty
+      ansible.builtin.assert:
+        that:
+          - cluster_output.ontap_info['cluster/nodes'].records | length > 0
+        fail_msg: "No cluster node records were returned - cannot validate cluster readiness."
+
     - name: Verify that all individual nodes in the cluster are healthy
       ansible.builtin.assert:
         that:
@@ -41,6 +47,12 @@
         https: true
         validate_certs: false
       register: disk_output
+
+    - name: Verify storage disk information is not empty
+      ansible.builtin.assert:
+        that:
+          - disk_output.ontap_info['storage/disks'].records | length > 0
+        fail_msg: "No storage disk records were returned - cannot validate disk presence."
 
     - name: Verify that all storage disks are present
       ansible.builtin.assert:
@@ -87,6 +99,12 @@
         validate_certs: false
       register: aggregate_output
 
+    - name: Verify root aggregate information is not empty
+      ansible.builtin.assert:
+        that:
+          - aggregate_output.ontap_info['storage/aggregates'].records | length > 0
+        fail_msg: "No aggregate records were returned - cannot validate root aggregates."
+
     - name: Verify that all root aggregates are online
       ansible.builtin.assert:
          that:
@@ -110,6 +128,12 @@
         https: true
         validate_certs: false
       register: lif_output
+
+    - name: Verify logical interface information is not empty
+      ansible.builtin.assert:
+        that:
+          - lif_output.ontap_info['network/ip/interfaces'].records | selectattr('scope', 'equalto', 'cluster') | list | length > 0
+        fail_msg: "No cluster-scoped LIF records were returned - cannot validate LIF status."
 
     - name: Verify that all cluster, cluster management and node management LIFs are up
       ansible.builtin.assert:
