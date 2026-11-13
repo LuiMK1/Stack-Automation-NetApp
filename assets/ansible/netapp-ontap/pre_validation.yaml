@@ -87,15 +87,14 @@
         label: "{{ item.shelf }}"
 
     - name: Get root aggregate information
-      netapp.ontap.na_ontap_rest_info:
+      netapp.ontap.na_ontap_rest_cli:
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
-        gather_subset:
-        - storage/aggregates
-        fields: 
-          - state
-        https: true
+        command: storage/aggregate
+        params:
+          fields: state
+        verb: GET
         validate_certs: false
       register: aggregate_output
     
