@@ -1,0 +1,125 @@
+---
+- name: Post Config Validation Tasks
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+
+    - name: Get System Health status
+      netapp.ontap.na_ontap_rest_cli:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        command: system/health/status
+        verb: GET
+        validate_certs: false
+      register: health_status
+
+    - name: Verify system health status is not empty
+      ansible.builtin.assert:
+        that:
+          - health_status.msg.status | default('') | length > 0
+        fail_msg: "No system health status was returned - cannot validate system health."
+
+    - name: Verify system health status is ok
+      ansible.builtin.assert:
+        that:
+          - health_status.msg.status == 'ok'
+        fail_msg: "System health status is not ok! Current status: {{ health_status.msg.status }}"
+        success_msg: "System health status is ok."
+
+    - name: Get System health alert
+      netapp.ontap.na_ontap_rest_cli:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        command: system/health/alert
+        verb: GET
+        validate_certs: false
+      register: health_alert
+
+    - name: Verify there are no health alerts
+      ansible.builtin.assert:
+        that:
+          - health_alert.msg.num_records == 0
+        fail_msg: >
+          Health alerts found! Count: {{ health_alert.msg.num_records }}.
+          Records: {{ health_alert.msg.records | to_nice_json }}
+        success_msg: "No health alerts found."
+
+    - name: Send a test to AutoSupport
+      netapp.ontap.na_ontap_autosupport_invoke:
+        autosupport_message: "{{ autosupport_message }}"
+        type: all
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+
+    - name: Pause 30 seconds after sending AutoSupport message
+      ansible.builtin.pause:
+        seconds: 30
+
+    - name: Wait for AutoSupport collection and transmission to finish
+      netapp.ontap.na_ontap_rest_info:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        gather_subset:
+          - support/autosupport/messages
+        fields:
+          - 'index'
+          - 'state'
+          - 'error'
+          - 'subject'
+          - 'generated_on'
+      register: all_asups
+      until: >
+        ((all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first)['state']) in ['collection_failed', 'sent_successful', 'transmission_failed', 'ondemand_ignore']
+      retries: 30
+      delay: 10
+      ignore_errors: true
+
+    - name: Print the Auto support test status
+      ansible.builtin.debug:
+        var: all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first
+
+    - name: Verify AutoSupport test status
+      ansible.builtin.assert:
+        that:
+          - latest_item.state != 'collection_failed' and latest_item.state != 'transmission_failed'
+        fail_msg: "AutoSupport FAILED! Status: {{ latest_item.state }}. Error: {{ latest_item}}"
+        success_msg: >-
+          {% if latest_item.state == 'sent_successful' %}
+          AutoSupport PASSED! Status: {{ latest_item.state }}
+          {% else %}
+          Timeout exceeded - AutoSupport collection is still in progress. Manually track this AutoSupport message. Details: {{ latest_item | to_nice_json }}
+          {% endif %}
+      vars:
+        latest_item: "{{ all_asups.ontap_info['support/autosupport/messages'].records | sort(attribute='index', reverse=true) | first }}"
+
+    - name: Get the event logs
+      netapp.ontap.na_ontap_rest_cli:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        command: event/log
+        verb: GET
+        params:
+          severity: "emergency,alert,error"
+        validate_certs: false
+      register: event_log
+  
+    - name: Verify there are no error/emergency/alert severity events
+      ansible.builtin.assert:
+        that:
+          - event_log.msg.num_records == 0
+        fail_msg: >
+          Events of severity error/emergency/alert are present! 
+          Count: {{ event_log.msg.num_records }}. 
+          Details: {{ event_log }}
+        success_msg: "No error/emergency/alert severity events found."  

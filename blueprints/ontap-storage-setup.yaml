@@ -128,6 +128,9 @@ customization:
       configure_svm_audit_log:
         type: grain
         position: {x: 920, y: 1520}
+      post_config_validation:
+        type: grain
+        position: {x: 1000, y: 1520}
   launch-form:
     categories:
       - name: ONTAP Storage Setup
@@ -162,6 +165,7 @@ customization:
               - name: autosupport_from_address
               - name: autosupport_to_addresses
               - name: autosupport_proxy_url
+              - name: autosupport_message
           - name: ONTAP Licenses
             inputs:
               - name: legacy_license_keys
@@ -291,6 +295,10 @@ inputs:
     type: string
     default: ""
     description: Optional AutoSupport proxy URL. Leave empty to omit it.
+  autosupport_message:
+    type: string
+    default: "FlexPod ONTAP Storage Configuration completed"
+    description: Text to be passed for the AutoSupport test.
   legacy_license_keys:
     type: string
     sensitive: true
@@ -1208,6 +1216,14 @@ grains:
         - audit_log_volume_name: '{{ .inputs.audit_log_volume_name }}'
         - audit_log_volume_size_gb: '{{ .inputs.audit_log_volume_size_gb }}'
         - audit_log_aggregate: '{{ .inputs.audit_log_aggregate }}'
+
+  post_config_validation:
+    kind: ansible
+    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" and .inputs.autosupport_message != "" %}true{% else %}false{% endif %}'
+    spec:
+      source:
+        store: Stack-Automation-NetApp
+        path: assets/ansible/netapp-ontap/post_config_validation.yaml
     
   configure_nfs_lif:
     kind: ansible
