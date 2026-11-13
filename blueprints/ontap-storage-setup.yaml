@@ -25,112 +25,118 @@ customization:
     nodes:
       pre_validation:
         type: grain
-        position: {x: 40, y: 80}
+        position: {x: 80, y: 80}
       update_cluster_location:
         type: grain
-        position: {x: 80, y: 80}
+        position: {x: 360, y: 80}
       ensure_cluster_mgmt_auto_revert:
         type: grain
-        position: {x: 360, y: 80}
+        position: {x: 640, y: 80}
       delete_default_broadcast_domains:
         type: grain
-        position: {x: 640, y: 80}
+        position: {x: 920, y: 80}
       configure_sp_network:
         type: grain
-        position: {x: 920, y: 80}
+        position: {x: 1200, y: 80}
       discover_disk_class:
         type: grain
-        position: {x: 1200, y: 80}
+        position: {x: 80, y: 320}
       create_data_aggregates:
         type: grain
-        position: {x: 80, y: 320}
+        position: {x: 360, y: 320}
       zero_spare_disks:
         type: grain
-        position: {x: 360, y: 320}
+        position: {x: 640, y: 320}
       ensure_cluster_ha:
         type: grain
-        position: {x: 640, y: 320}
+        position: {x: 920, y: 320}
       disable_flow_control:
         type: grain
-        position: {x: 920, y: 320}
+        position: {x: 1200, y: 320}
       enable_cdp:
         type: grain
-        position: {x: 1200, y: 320}
+        position: {x: 80, y: 560}
       enable_lldp:
         type: grain
-        position: {x: 80, y: 560}
+        position: {x: 360, y: 560}
       configure_dns:
         type: grain
-        position: {x: 360, y: 560}
+        position: {x: 640, y: 560}
       configure_ntp:
         type: grain
-        position: {x: 640, y: 560}
+        position: {x: 920, y: 560}
       enable_storage_failover:
         type: grain
-        position: {x: 920, y: 560}
+        position: {x: 1200, y: 560}
       set_timezone:
         type: grain
-        position: {x: 1200, y: 560}
+        position: {x: 80, y: 800}
       configure_autosupport:
         type: grain
-        position: {x: 80, y: 800}
+        position: {x: 360, y: 800}
       add_licenses:
         type: grain
-        position: {x: 360, y: 800}
+        position: {x: 640, y: 800}
       configure_fips:
         type: grain
-        position: {x: 640, y: 800}
+        position: {x: 920, y: 800}
       configure_snmp:
         type: grain
-        position: {x: 920, y: 800}
+        position: {x: 1200, y: 800}
       create_login_banner:
         type: grain
-        position: {x: 1200, y: 800}
+        position: {x: 80, y: 1040}
       disable_http_cluster_management:
         type: grain
-        position: {x: 80, y: 1040}
+        position: {x: 360, y: 1040}
       configure_ifgrp:
         type: grain
-        position: {x: 360, y: 1040}
+        position: {x: 640, y: 1040}
       configure_ipspace:
         type: grain
-        position: {x: 640, y: 1040}
+        position: {x: 920, y: 1040}
       configure_broadcast_domains:
         type: grain
-        position: {x: 920, y: 1040}
+        position: {x: 1200, y: 1040}
       configure_vlan_interfaces:
         type: grain
-        position: {x: 1200, y: 1040}
+        position: {x: 80, y: 1280}
       configure_ontap_svm:
         type: grain
-        position: {x: 80, y: 1280}
+        position: {x: 360, y: 1280}
       configure_svm_load_sharing_snapmirror:
         type: grain
-        position: {x: 360, y: 1280}
+        position: {x: 640, y: 1280}
       configure_svm_vsadmin:
         type: grain
-        position: {x: 640, y: 1280}
+        position: {x: 920, y: 1280}
       configure_svm_login_banner:
         type: grain
-        position: {x: 920, y: 1280}
+        position: {x: 1200, y: 1280}
       configure_svm_mgmt_lif:
         type: grain
-        position: {x: 1200, y: 1280}
+        position: {x: 80, y: 1520}
       configure_svm_default_route:
         type: grain
-        position: {x: 80, y: 1520}
+        position: {x: 360, y: 1520}
       configure_svm_dns:
         type: grain
-        position: {x: 360, y: 1520}
+        position: {x: 640, y: 1520}
       configure_nfs_export_policy:
         type: grain
-        position: {x: 640, y: 1520}
+        position: {x: 920, y: 1520}
       configure_svm_audit_log:
         type: grain
-        position: {x: 920, y: 1520}
+        position: {x: 1200, y: 1520}
+      configure_nfs_lif:
+        type: grain
+        position: {x: 80, y: 1760}
+      configure_iscsi_lif:
+        type: grain
+        position: {x: 360, y: 1760}
       post_config_validation:
         type: grain
-        position: {x: 1000, y: 1520}
+        position: {x: 640, y: 1760}
   launch-form:
     categories:
       - name: ONTAP Storage Setup
@@ -647,6 +653,7 @@ grains:
   update_cluster_location:
     kind: ansible
     when: '{% if .inputs.cluster_name != "" and .inputs.cluster_location != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -662,6 +669,7 @@ grains:
 
   ensure_cluster_mgmt_auto_revert:
     kind: ansible
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -675,6 +683,7 @@ grains:
 
   delete_default_broadcast_domains:
     kind: ansible
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -689,6 +698,7 @@ grains:
   configure_sp_network:
     kind: ansible
     when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -704,6 +714,7 @@ grains:
   discover_disk_class:
     kind: ansible
     when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -739,6 +750,7 @@ grains:
 
   zero_spare_disks:
     kind: ansible
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -752,6 +764,7 @@ grains:
 
   ensure_cluster_ha:
     kind: ansible
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -766,6 +779,7 @@ grains:
   disable_flow_control:
     kind: ansible
     when: '{% if .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -780,6 +794,7 @@ grains:
 
   enable_cdp:
     kind: ansible
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -793,6 +808,7 @@ grains:
 
   enable_lldp:
     kind: ansible
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -807,6 +823,7 @@ grains:
   configure_dns:
     kind: ansible
     when: '{% if .inputs.dns_domain_name != "" and .inputs.dns_servers != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -823,6 +840,7 @@ grains:
   configure_ntp:
     kind: ansible
     when: '{% if .inputs.ntp_servers != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -837,6 +855,7 @@ grains:
 
   enable_storage_failover:
     kind: ansible
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -851,6 +870,7 @@ grains:
   set_timezone:
     kind: ansible
     when: '{% if .inputs.cluster_name != "" and .inputs.time_zone != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -868,6 +888,7 @@ grains:
   configure_autosupport:
     kind: ansible
     when: '{% if .inputs.autosupport_mail_hosts != "" and .inputs.autosupport_from_address != "" and .inputs.autosupport_to_addresses != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -886,6 +907,7 @@ grains:
   add_licenses:
     kind: ansible
     when: '{% if .inputs.legacy_license_keys != "" or .inputs.nlf_license_content != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -901,6 +923,7 @@ grains:
 
   configure_fips:
     kind: ansible
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -916,6 +939,7 @@ grains:
   configure_snmp:
     kind: ansible
     when: '{% if .inputs.snmp_contact != "" or .inputs.snmp_location != "" or .inputs.snmp_v3_user != "" %}true{% else %}{% if .inputs.is_fips_enabled != "true" %}{% if .inputs.snmp_community != "" or .inputs.traphost_ip != "" %}true{% else %}false{% endif %}{% else %}false{% endif %}{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -942,6 +966,7 @@ grains:
   create_login_banner:
     kind: ansible
     when: '{% if .inputs.cluster_login_banner != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -957,6 +982,7 @@ grains:
   disable_http_cluster_management:
     kind: ansible
     when: '{% if .inputs.cluster_name != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -990,6 +1016,7 @@ grains:
   configure_ipspace:
     kind: ansible
     when: '{% if .inputs.ipspace_name != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -1216,15 +1243,7 @@ grains:
         - audit_log_volume_name: '{{ .inputs.audit_log_volume_name }}'
         - audit_log_volume_size_gb: '{{ .inputs.audit_log_volume_size_gb }}'
         - audit_log_aggregate: '{{ .inputs.audit_log_aggregate }}'
-
-  post_config_validation:
-    kind: ansible
-    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" and .inputs.autosupport_message != "" %}true{% else %}false{% endif %}'
-    spec:
-      source:
-        store: Stack-Automation-NetApp
-        path: assets/ansible/netapp-ontap/post_config_validation.yaml
-    
+   
   configure_nfs_lif:
     kind: ansible
     when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.node_specs != "[]"  and .inputs.nfs_vlan_id != "" %}true{% else %}false{% endif %}'
@@ -1266,3 +1285,17 @@ grains:
         - iscsi_b_vlan_id: '{{ .inputs.iscsi_b_vlan_id }}'
         - allowed_protocols: '{{ .inputs.allowed_protocols }}'
       
+  post_config_validation:
+    kind: ansible
+    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" and .inputs.autosupport_message != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation, update_cluster_location, ensure_cluster_mgmt_auto_revert, configure_sp_network, zero_spare_disks, ensure_cluster_ha, disable_flow_control, enable_cdp, enable_lldp, configure_dns, configure_ntp, enable_storage_failover, set_timezone, configure_autosupport, configure_fips, configure_snmp, create_login_banner, disable_http_cluster_management, configure_svm_load_sharing_snapmirror, configure_svm_vsadmin, configure_svm_login_banner, configure_svm_dns, configure_nfs_export_policy, configure_svm_audit_log, configure_nfs_lif, configure_iscsi_lif
+    spec:
+      source:
+        store: Stack-Automation-NetApp
+        path: assets/ansible/netapp-ontap/post_config_validation.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'

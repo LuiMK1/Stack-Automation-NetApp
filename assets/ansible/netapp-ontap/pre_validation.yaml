@@ -94,10 +94,14 @@
         gather_subset:
         - storage/aggregates
         fields: 
-          - 'state'
+          - state
         https: true
         validate_certs: false
       register: aggregate_output
+    
+    - name: Print root aggregates
+      ansible.builtin.debug:
+        var: aggregate_output
 
     - name: Verify root aggregate information is not empty
       ansible.builtin.assert:
