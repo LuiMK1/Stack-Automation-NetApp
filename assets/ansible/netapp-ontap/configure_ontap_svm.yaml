@@ -1,0 +1,309 @@
+# Aggregate names come from the node configuration table.
+# The SVM is created in the IPspace from Network Configuration.
+# Protocols are nfs, iscsi, or both.
+# Each selected license is checked before the SVM is created.
+# nfs starts NFSv3 and NFSv4.1 and disables UDP.
+# iscsi starts the iSCSI service.
+# The load-sharing SnapMirror, vsadmin, the SVM login banner, the management LIF,
+# the default route, SVM DNS, the NFS export policy rule, and the audit log
+# volume are separate tasks.
+# SVM name, IPspace, protocols, aggregate names, and the selected protocol
+# licenses are checked just before the SVM is created.
+# NVMe and S3 are not configured here.
+- name: Configure the ONTAP SVM
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    svm_name_normalized: "{{ svm_name | default('') | string | trim }}"
+    ipspace_name_normalized: "{{ ipspace_name | default('') | string | trim }}"
+    node_rows: >-
+      {{
+        [] if (node_specs | default('[]') | string | trim) in ['', '[]']
+        else (node_specs | from_json if node_specs is string else node_specs)
+      }}
+    raw_protocols: "{{ allowed_protocols | default('[]') }}"
+    decoded_protocols: >-
+      {{
+        [] if (raw_protocols | string | trim) in ['', '[]']
+        else (
+          raw_protocols | from_json
+          if raw_protocols is string and (raw_protocols | string | trim) is match('^\\[')
+          else (
+            raw_protocols if raw_protocols is not string
+            else raw_protocols.split(',')
+          )
+        )
+      }}
+    protocol_list: >-
+      {{
+        decoded_protocols
+        | map('string')
+        | map('trim')
+        | map('lower')
+        | reject('equalto', '')
+        | unique
+        | list
+      }}
+
+  tasks:
+
+    - name: Note that the SVM name is blank
+      ansible.builtin.debug:
+        msg: The SVM name is blank, so SVM configuration was skipped.
+      when: svm_name_normalized | length == 0
+
+    - name: Stop when the SVM name is blank
+      ansible.builtin.meta: end_play
+      when: svm_name_normalized | length == 0
+
+    - name: Normalize node rows
+      ansible.builtin.set_fact:
+        node_plan: "{{ node_plan | default([]) + [normalized_row] }}"
+      vars:
+        normalized_row:
+          node_name: "{{ item.node_name | default(item['Node Name'], true) | default('', true) | trim }}"
+          aggregate_name: "{{ item.aggregate_name | default(item['Aggregate Name'], true) | default('', true) | trim }}"
+      loop: "{{ node_rows }}"
+      loop_control:
+        label: "{{ item.node_name | default(item['Node Name'], true) | default('unnamed row', true) }}"
+
+    - name: Build the aggregate list from the node rows
+      ansible.builtin.set_fact:
+        total_aggr_list: "{{ total_aggr_list | default([]) + [item.aggregate_name] }}"
+      loop: "{{ node_plan | default([]) }}"
+      when: item.aggregate_name | length > 0
+      loop_control:
+        label: "{{ item.aggregate_name }}"
+
+    - name: Validate the aggregate list
+      ansible.builtin.assert:
+        that:
+          - total_aggr_list | default([]) | length > 0
+          - total_aggr_list | default([]) | unique | list | length == total_aggr_list | default([]) | length
+        fail_msg: >-
+          SVM creation needs at least one aggregate name from the node
+          configuration rows, and those names must be unique. Requested names:
+          {{ total_aggr_list | default([]) | join(', ') }}.
+
+    - name: Validate the SVM name
+      ansible.builtin.assert:
+        that:
+          - svm_name_normalized is match('^[A-Za-z_][A-Za-z0-9_.-]{0,40}$')
+        fail_msg: >-
+          SVM name must start with a letter or underscore, contain only
+          letters, numbers, underscores, hyphens, and periods, and be at most
+          41 characters.
+
+    - name: Validate the IPspace name
+      ansible.builtin.assert:
+        that:
+          - ipspace_name_normalized | length > 0
+          - ipspace_name_normalized is match('^[A-Za-z_][A-Za-z0-9_.-]{0,63}$')
+          - ipspace_name_normalized | lower not in ['default', 'cluster']
+        fail_msg: >-
+          SVM creation uses the IPspace name from Network Configuration. Enter
+          a name that starts with a letter or underscore. Default and Cluster
+          already exist and cannot be used here.
+
+    - name: Validate that at least one protocol is selected
+      ansible.builtin.assert:
+        that:
+          - protocol_list | length > 0
+        fail_msg: Select nfs, iscsi, or both.
+
+    - name: Validate each selected protocol
+      ansible.builtin.assert:
+        that:
+          - item in ['nfs', 'iscsi']
+        fail_msg: >-
+          {{ item }} is not a supported protocol. Select nfs, iscsi, or both.
+      loop: "{{ protocol_list }}"
+      loop_control:
+        label: "{{ item }}"
+
+    # Same check as system license show for the selected package.
+    # Every serial must have licenses.compliance.state compliant.
+    # The tasks below show the owner, serial, installed license, and expiration.
+    # A row with no serial number is not an installed license.
+    - name: Read each selected license package
+      netapp.ontap.na_ontap_rest_info:
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        use_rest: always
+        use_python_keys: true
+        gather_subset:
+          - cluster/licensing/licenses
+        parameters:
+          name: "{{ item }}"
+        fields:
+          - name
+          - description
+          - licenses.owner
+          - licenses.serial_number
+          - licenses.installed_license
+          - licenses.expiry_time
+          - licenses.active
+          - licenses.compliance.state
+      loop: "{{ protocol_list }}"
+      loop_control:
+        label: "{{ item }}"
+      register: license_lookup
+
+    - name: Record each selected license package
+      ansible.builtin.set_fact:
+        selected_license_packages: "{{ selected_license_packages | default([]) + [package_row] }}"
+      vars:
+        package_records: >-
+          {{
+            (item.ontap_info.cluster_licensing_licenses | default({})).records
+            | default([])
+          }}
+        package_record: "{{ package_records | first | default({}) }}"
+        license_entries: "{{ package_record.licenses | default([]) }}"
+        installed_entries: >-
+          {{
+            license_entries
+            | selectattr('serial_number', 'defined')
+            | rejectattr('serial_number', 'equalto', '')
+            | list
+          }}
+        package_row:
+          protocol: "{{ item.item }}"
+          name: "{{ package_record.name | default('') | string | trim }}"
+          description: "{{ package_record.description | default('') | string | trim }}"
+          licenses: "{{ license_entries }}"
+          installed_entries: "{{ installed_entries }}"
+          compliance_states: >-
+            {{
+              installed_entries
+              | selectattr('compliance.state', 'defined')
+              | map(attribute='compliance.state')
+              | map('string')
+              | map('trim')
+              | map('lower')
+              | list
+            }}
+      loop: "{{ license_lookup.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Show that each selected protocol license is installed
+      ansible.builtin.debug:
+        msg: >-
+          {{ item.protocol }} license package
+          {{ item.name if item.name | length > 0 else 'not installed' }}
+          {{ ('(' ~ item.description ~ ')') if item.description | length > 0 else '' }}.
+          Installed serials: {{ item.installed_entries | length }}.
+          licenses.compliance.state:
+          {{ item.compliance_states | join(', ') if item.compliance_states | length > 0 else 'not installed' }}.
+      loop: "{{ selected_license_packages }}"
+      loop_control:
+        label: "{{ item.protocol }}"
+
+    - name: Show each license entry
+      ansible.builtin.debug:
+        msg: >-
+          {{ item.0.protocol }} serial
+          {{ item.1.serial_number | default('none') }},
+          owner {{ item.1.owner | default('') }},
+          installed license {{ item.1.installed_license | default('') }},
+          expiration {{ item.1.expiry_time | default('none') }},
+          licenses.compliance.state {{ (item.1.compliance | default({})).state | default('') }},
+          active {{ item.1.active | default(false) }}.
+      loop: "{{ selected_license_packages | subelements('licenses', skip_missing=True) }}"
+      loop_control:
+        label: "{{ item.0.protocol }} {{ item.1.serial_number | default('') }}"
+
+    - name: Verify the selected protocol licenses are installed
+      ansible.builtin.assert:
+        that:
+          - item.name | length > 0
+          - item.name | lower == item.protocol
+          - item.installed_entries | length > 0
+          - item.compliance_states | length == item.installed_entries | length
+          - item.compliance_states | unique | list == ['compliant']
+        fail_msg: >-
+          The {{ item.protocol }} license must be installed and every serial
+          must have licenses.compliance.state compliant before the
+          {{ item.protocol }} service is enabled. Package
+          {{ item.name if item.name | length > 0 else 'not installed' }}.
+          licenses.compliance.state:
+          {{ item.compliance_states | join(', ') if item.compliance_states | length > 0 else 'not installed' }}.
+      loop: "{{ selected_license_packages }}"
+      loop_control:
+        label: "{{ item.protocol }}"
+
+    - name: Show the aggregate list for the SVM
+      ansible.builtin.debug:
+        msg: >-
+          {{ total_aggr_list | length }} aggregate(s) will be assigned to
+          {{ svm_name_normalized }} in IPspace {{ ipspace_name_normalized }}
+          with protocols {{ protocol_list | join(', ') }}:
+          {{ total_aggr_list | join(', ') }}.
+
+    - name: Create the SVM with the selected protocols
+      netapp.ontap.na_ontap_svm:
+        state: present
+        name: "{{ svm_name_normalized }}"
+        ipspace: "{{ ipspace_name_normalized }}"
+        allowed_protocols: "{{ protocol_list }}"
+        aggr_list: "{{ total_aggr_list }}"
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        use_rest: always
+
+    # ONTAP accepts this when a named protocol is already absent. nfs and iscsi stay.
+    - name: Remove protocols that were not selected
+      netapp.ontap.na_ontap_rest_cli:
+        command: vserver/remove-protocols
+        verb: PATCH
+        params:
+          vserver: "{{ svm_name_normalized }}"
+        body:
+          protocols:
+            - fcp
+            - cifs
+            - ndmp
+            - nvme
+            - s3
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+
+    - name: Enable NFS on the SVM
+      netapp.ontap.na_ontap_nfs:
+        state: present
+        vserver: "{{ svm_name_normalized }}"
+        service_state: started
+        nfsv3: enabled
+        nfsv41: enabled
+        udp: disabled
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        use_rest: always
+      when: "'nfs' in protocol_list"
+
+    - name: Create and enable the iSCSI service
+      netapp.ontap.na_ontap_iscsi:
+        state: present
+        vserver: "{{ svm_name_normalized }}"
+        service_state: started
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        use_rest: always
+      when: "'iscsi' in protocol_list"
