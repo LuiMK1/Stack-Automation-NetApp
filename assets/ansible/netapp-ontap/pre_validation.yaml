@@ -94,7 +94,7 @@
         gather_subset:
         - storage/aggregates
         fields: 
-        - "state"
+          - "state"
         https: true
         validate_certs: false
       register: aggregate_output
