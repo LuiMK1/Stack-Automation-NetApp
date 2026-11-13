@@ -16,6 +16,12 @@
         validate_certs: false
       register: health_status
 
+    - name: Verify system health status is not empty
+      ansible.builtin.assert:
+        that:
+          - health_status.msg.status | default('') | length > 0
+        fail_msg: "No system health status was returned - cannot validate system health."
+
     - name: Verify system health status is ok
       ansible.builtin.assert:
         that:
