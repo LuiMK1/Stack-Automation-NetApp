@@ -44,6 +44,7 @@
         - storage/disks
         fields: 
           - "state"
+          - "container_type"
         https: true
         validate_certs: false
       register: disk_output
