@@ -107,7 +107,7 @@
           {% if pending_items | length == 0 and latest_items | map(attribute='state') | unique | list == ['sent_successful'] %}
           AutoSupport PASSED! All {{ latest_items | length }} message(s) with index {{ latest_index }} are sent_successful.
           {% else %}
-          AutoSupport has no failures, but not all messages with index {{ latest_index }} are sent_successful (timeout or ondemand_ignore). Manually track them. Details: {{ latest_items | to_nice_json }}
+          AutoSupport has no failures, but not all messages with index {{ latest_index }} are sent_successful. Manually track them. Details: {{ latest_items | to_nice_json }}
           {% endif %}
       vars:
         asup_records: "{{ all_asups.ontap_info['support/autosupport/messages'].records | default([]) }}"
