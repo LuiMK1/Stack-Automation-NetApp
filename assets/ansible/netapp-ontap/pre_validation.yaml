@@ -93,7 +93,7 @@
         password: "{{ ontap_password }}"
         command: storage/aggregate
         params:
-          is-root: "true"
+          root: "true"
           fields: state
         verb: GET
         validate_certs: false
