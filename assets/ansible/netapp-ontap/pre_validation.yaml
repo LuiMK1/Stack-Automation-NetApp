@@ -94,7 +94,7 @@
         command: storage/aggregate
         params:
           root: "true"
-          fields: state
+          fields: state,aggregate
         verb: GET
         validate_certs: false
       register: aggregate_output
@@ -106,18 +106,18 @@
     - name: Verify root aggregate information is not empty
       ansible.builtin.assert:
         that:
-          - aggregate_output.ontap_info['storage/aggregates'].records | length > 0
+          - (aggregate_output.msg.num_records | default(0)) > 0
         fail_msg: "No aggregate records were returned - cannot validate root aggregates."
 
     - name: Verify that all root aggregates are online
       ansible.builtin.assert:
          that:
            - item.state == 'online'
-         fail_msg: "Aggregate {{ item.name }} is not online! Current state: {{ item.state }}"
-         success_msg: "Aggregate {{ item.name }} is online."
-      loop: "{{ aggregate_output.ontap_info['storage/aggregates'].records }}"
+         fail_msg: "Aggregate {{ item.aggregate }} is not online! Current state: {{ item.state }}"
+         success_msg: "Aggregate {{ item.aggregate }} is online."
+      loop: "{{ aggregate_output.msg.records }}"
       loop_control:
-         label: "{{ item.name }}"
+         label: "{{ item.aggregate }}"
     
     - name: Get logical interface information
       netapp.ontap.na_ontap_rest_info:
