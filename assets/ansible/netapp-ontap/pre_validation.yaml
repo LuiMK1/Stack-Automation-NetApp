@@ -91,6 +91,7 @@
           }}
         success_msg: >-
           Pre-validation passed: All {{ disk_output.ontap_info['storage/disks'].records | length }} disks are present and healthy.
+          {{ disk_output.ontap_info['storage/disks'].records }}
 
     - name: Get Disk Shelf Information
       netapp.ontap.na_ontap_rest_cli:
