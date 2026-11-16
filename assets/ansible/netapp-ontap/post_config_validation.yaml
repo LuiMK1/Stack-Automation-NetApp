@@ -125,6 +125,7 @@
         verb: GET
         params:
           severity: "emergency,alert,error"
+          fields: "time,node,severity,event,message"
         validate_certs: false
       register: event_log
 
