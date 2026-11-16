@@ -1316,7 +1316,7 @@ grains:
     depends-on: pre_validation
     spec:
       source:
-        store: Hardening
+        store: Stack-Automation-NetApp
         path: assets/ansible/netapp-ontap/security_hardening.yaml
       agent:
         name: '{{ .inputs.agent }}'
