@@ -125,6 +125,7 @@
         verb: GET
         params:
           severity: "emergency,alert,error"
+          fields: event
         validate_certs: false
       register: event_log
 
@@ -134,7 +135,7 @@
           {% if event_log.msg.num_records > 0 %}
           {{ event_log.msg.num_records }} event(s) of severity error/emergency/alert found. Showing the 5 most recent:
           {% for e in event_log.msg.records[:5] %}
-          - {{ e }}
+          - {{ e | to_nice_json }}
           {% endfor %}
           Review the full list on the cluster with: event log show -severity EMERGENCY,ALERT,ERROR
           {% else %}
