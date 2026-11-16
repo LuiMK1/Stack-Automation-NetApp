@@ -85,8 +85,8 @@
       until:
         - asup_records | length > 0
         - latest_items | map(attribute='state') | select('in', ['collection_failed', 'sent_successful', 'transmission_failed', 'ondemand_ignore']) | list | length == latest_items | length
-      retries: 30
-      delay: 10
+      retries: 1
+      delay: 1
       ignore_errors: true
 
     - name: Print the Auto support test status
@@ -133,7 +133,7 @@
         msg: >-
           {% if event_log.msg.num_records > 0 %}
           {{ event_log.msg.num_records }} event(s) of severity error/emergency/alert found. Showing the 5 most recent:
-          {% for e in (event_log.msg.records | sort(attribute='time', reverse=true))[:5] %}
+          {% for e in event_log.msg.records[:5] %}
           - {{ e }}
           {% endfor %}
           Review the full list on the cluster with: event log show -severity EMERGENCY,ALERT,ERROR
