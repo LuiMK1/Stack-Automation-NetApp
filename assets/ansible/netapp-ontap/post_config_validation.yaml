@@ -125,7 +125,7 @@
         verb: GET
         params:
           severity: "emergency,alert,error"
-          fields: event
+          fields: event, time
         validate_certs: false
       register: event_log
 
@@ -142,7 +142,7 @@
     - name: Show the 5 most recent error/emergency/alert events
       ansible.builtin.debug:
         var: item
-      loop: "{{ event_log.msg.records[:5] | default([]) }}"
+      loop: "{{ (event_log.msg.records | default([]) | sort(attribute='time', reverse=true))[:5] }}"
       loop_control:
         label: "{{ item.event | default('event') }}"
       when: event_log.msg.num_records > 0
