@@ -125,9 +125,14 @@
         verb: GET
         params:
           severity: "emergency,alert,error"
-          fields: event, time
+          #fields: event, time
+          fields: "*"
         validate_certs: false
       register: event_log
+
+    - name: DEBUG - Print raw event_log
+      ansible.builtin.debug:
+        var: event_log
 
     - name: Report error/emergency/alert severity events summary
       ansible.builtin.debug:
