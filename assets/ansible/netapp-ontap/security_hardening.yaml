@@ -1,0 +1,22 @@
+---
+- name: Security Hardening Tasks
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+
+    # Configure event notification and logging for the cluster
+    - name: Configure event notification for the cluster
+      netapp.ontap.na_ontap_rest_cli:
+        command: 'event/config'
+        verb: 'PATCH'
+        body: {'mail-from': '{{ mail_from }}', 'mail-server': '{{ mail_server }}', 'proxy-url': '{{ proxy_url | default(omit) }}', 'proxy-user': '{{ proxy_user | default(omit) }}'}
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        validate_certs: false
+
+
+
+

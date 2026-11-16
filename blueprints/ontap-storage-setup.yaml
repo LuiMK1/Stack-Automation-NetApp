@@ -134,9 +134,12 @@ customization:
       configure_iscsi_lif:
         type: grain
         position: {x: 360, y: 1760}
-      post_config_validation:
+      security_hardening:
         type: grain
         position: {x: 640, y: 1760}
+      post_config_validation:
+        type: grain
+        position: {x: 920, y: 1760}
   launch-form:
     categories:
       - name: ONTAP Storage Setup
@@ -229,6 +232,12 @@ customization:
               - name: audit_log_volume_name
               - name: audit_log_volume_size_gb
               - name: audit_log_aggregate
+          - name: Event Notification Email Settings
+            inputs:
+              - name: mail_from
+              - name: mail_server
+              - name: proxy_url
+              - name: proxy_user
 
 inputs:
   agent:
@@ -634,6 +643,22 @@ inputs:
       the mirror refresh, and auditing. Set any of them and leave one blank
       and the task fails. Leave the SVM name blank to skip this with the
       SVM task.
+  mail_from:
+    type: string
+    default: ""
+    description: Email address ONTAP uses as the sender for event notifications.
+  mail_server:
+    type: string
+    default: ""
+    description: Name or IP address of the SMTP server used by the cluster when sending email notification of events.
+  proxy_url:
+    type: string
+    default: ""
+    description: Optional proxy URL for sending event notification email. Leave empty to omit it.
+  proxy_user:
+    type: string
+    default: ""
+    description: Optional proxy username for sending event notification email. Leave empty to omit it.
 
 grains:
   pre_validation:
@@ -1285,10 +1310,29 @@ grains:
         - iscsi_b_vlan_id: '{{ .inputs.iscsi_b_vlan_id }}'
         - allowed_protocols: '{{ .inputs.allowed_protocols }}'
       
+  security_hardening:
+    kind: ansible
+    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" %}true{% else %}false{% endif %}'
+    depends-on: pre_validation
+    spec:
+      source:
+        store: Hardening
+        path: assets/ansible/netapp-ontap/security_hardening.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - mail_from: '{{ .inputs.mail_from }}'
+        - mail_server: '{{ .inputs.mail_server }}'
+        - proxy_url: '{{ .inputs.proxy_url }}'
+        - proxy_user: '{{ .inputs.proxy_user }}'
+
   post_config_validation:
     kind: ansible
     when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" and .inputs.autosupport_message != "" %}true{% else %}false{% endif %}'
-    depends-on: pre_validation, update_cluster_location, ensure_cluster_mgmt_auto_revert, configure_sp_network, zero_spare_disks, ensure_cluster_ha, disable_flow_control, enable_cdp, enable_lldp, configure_dns, configure_ntp, enable_storage_failover, set_timezone, configure_autosupport, configure_fips, configure_snmp, create_login_banner, disable_http_cluster_management, configure_svm_load_sharing_snapmirror, configure_svm_vsadmin, configure_svm_login_banner, configure_svm_dns, configure_nfs_export_policy, configure_svm_audit_log, configure_nfs_lif, configure_iscsi_lif
+    depends-on: pre_validation, update_cluster_location, ensure_cluster_mgmt_auto_revert, configure_sp_network, zero_spare_disks, ensure_cluster_ha, disable_flow_control, enable_cdp, enable_lldp, configure_dns, configure_ntp, enable_storage_failover, set_timezone, configure_autosupport, configure_fips, configure_snmp, create_login_banner, disable_http_cluster_management, configure_svm_load_sharing_snapmirror, configure_svm_vsadmin, configure_svm_login_banner, configure_svm_dns, configure_nfs_export_policy, configure_svm_audit_log, configure_nfs_lif, configure_iscsi_lif, security_hardening
     spec:
       source:
         store: Stack-Automation-NetApp
