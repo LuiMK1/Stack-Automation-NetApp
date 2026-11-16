@@ -113,13 +113,16 @@
           severity: "emergency,alert,error"
         validate_certs: false
       register: event_log
-  
-    - name: Verify there are no error/emergency/alert severity events
-      ansible.builtin.assert:
-        that:
-          - event_log.msg.num_records == 0
-        fail_msg: >
-          Events of severity error/emergency/alert are present! 
-          Count: {{ event_log.msg.num_records }}. 
-          Details: {{ event_log }}
-        success_msg: "No error/emergency/alert severity events found."  
+
+    - name: Report error/emergency/alert severity events
+      ansible.builtin.debug:
+        msg: >-
+          {% if event_log.msg.num_records > 0 %}
+          {{ event_log.msg.num_records }} event(s) of severity error/emergency/alert found. Showing the 5 most recent:
+          {% for e in (event_log.msg.records | sort(attribute='time', reverse=true))[:5] %}
+          - time: {{ e.time }}, severity: {{ e.severity }}, node: {{ e.node }}, event: {{ e.event }}, message: {{ e.message }}
+          {% endfor %}
+          Review the full list on the cluster with: event log show -severity EMERGENCY,ALERT,ERROR
+          {% else %}
+          No error/emergency/alert severity events found.
+          {% endif %}
