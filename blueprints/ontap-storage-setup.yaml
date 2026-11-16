@@ -23,6 +23,9 @@ customization:
   grains-map:
     initial-map-view: custom
     nodes:
+      pre_validation:
+        type: grain
+        position: {x: 40, y: 80}
       update_cluster_location:
         type: grain
         position: {x: 80, y: 80}
@@ -146,11 +149,11 @@ customization:
               - name: cluster_location
               - name: time_zone
               - name: cluster_login_banner
-          - name: Node configuration. One row per node and one aggregate. To skip these tasks, delete every row. A blank row keeps Finish disabled.
+          - name: Node configuration. One row per node and one aggregate. Fill in NFS/iSCSI LIF details based on the protocol.Skip if not needed. To skip these tasks, delete every row. A blank row keeps Finish disabled.
             inputs:
               - name: node_specs
                 type: object
-                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count
+                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name, NFS LIF Address, NFS LIF Netmask,iSCSI A LIF Name,iSCSI A LIF Address,iSCSI A LIF Netmask,iSCSI B LIF Name,iSCSI B LIF Address,iSCSI B LIF Netmask
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
@@ -627,6 +630,20 @@ inputs:
       SVM task.
 
 grains:
+  pre_validation:
+    kind: ansible
+    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" %}true{% else %}false{% endif %}'
+    spec:
+      source:
+        store: Stack-Automation-NetApp
+        path: assets/ansible/netapp-ontap/pre_validation.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        
   update_cluster_location:
     kind: ansible
     when: '{% if .inputs.cluster_name != "" and .inputs.cluster_location != "" %}true{% else %}false{% endif %}'
@@ -1207,3 +1224,45 @@ grains:
       source:
         store: Stack-Automation-NetApp
         path: assets/ansible/netapp-ontap/post_config_validation.yaml
+    
+  configure_nfs_lif:
+    kind: ansible
+    when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.node_specs != "[]"  and .inputs.nfs_vlan_id != "" %}true{% else %}false{% endif %}'
+    depends-on: configure_ontap_svm, configure_vlan_interfaces
+    spec:
+      source:
+        store: Stack-Automation-NetApp
+        path: assets/ansible/netapp-ontap/configure_nfs_lif.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - ifgrp_name: '{{ .inputs.ifgrp_name }}'
+        - nfs_vlan_id: '{{ .inputs.nfs_vlan_id }}'
+        - allowed_protocols: '{{ .inputs.allowed_protocols }}'
+
+  configure_iscsi_lif:
+    kind: ansible
+    when: '{% if .inputs.svm_name != ""  and .inputs.ifgrp_name != ""  and .inputs.node_specs != "" and .inputs.node_specs != "[]" and .inputs.iscsi_a_vlan_id != "" and .inputs.iscsi_b_vlan_id != "" %}true{% else %}false{% endif %}'
+    depends-on: configure_ontap_svm, configure_vlan_interfaces
+    spec:
+      source:
+        store: Stack-Automation-NetApp
+        path: assets/ansible/netapp-ontap/configure_iscsi_lif.yaml
+      agent:
+        name: '{{ .inputs.agent }}'
+      inputs:
+        - ontap_hostname: '{{ .inputs.ontap_hostname }}'
+        - ontap_username: '{{ .inputs.ontap_username }}'
+        - ontap_password: '{{ .inputs.ontap_password }}'
+        - svm_name: '{{ .inputs.svm_name }}'
+        - node_specs: '{{ .inputs.node_specs }}'
+        - ifgrp_name: '{{ .inputs.ifgrp_name }}'
+        - iscsi_a_vlan_id: '{{ .inputs.iscsi_a_vlan_id }}'
+        - iscsi_b_vlan_id: '{{ .inputs.iscsi_b_vlan_id }}'
+        - allowed_protocols: '{{ .inputs.allowed_protocols }}'
+      
