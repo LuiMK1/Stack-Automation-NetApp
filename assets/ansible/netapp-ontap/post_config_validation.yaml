@@ -125,8 +125,7 @@
         verb: GET
         params:
           severity: "emergency,alert,error"
-          #fields: event, time
-          fields: "*"
+          fields: event
         validate_certs: false
       register: event_log
 
@@ -138,16 +137,16 @@
       ansible.builtin.debug:
         msg: >-
           {% if event_log.msg.num_records > 0 %}
-          {{ event_log.msg.num_records }} event(s) of severity error/emergency/alert found. Showing the 5 most recent.
+          {{ event_log.msg.num_records }} event(s) of severity error/emergency/alert found. Showing the top 5.
           Review the full list on the cluster with: event log show -severity EMERGENCY,ALERT,ERROR
           {% else %}
           No error/emergency/alert severity events found.
           {% endif %}
 
-    - name: Show the 5 most recent error/emergency/alert events
+    - name: Show the top 5 error/emergency/alert events
       ansible.builtin.debug:
         var: item
-      loop: "{{ (event_log.msg.records | default([]) | sort(attribute='time', reverse=true))[:5] }}"
+      loop: "{{ (event_log.msg.records | default([]))[:5] }}"
       loop_control:
         label: "{{ item.event | default('event') }}"
       when: event_log.msg.num_records > 0
