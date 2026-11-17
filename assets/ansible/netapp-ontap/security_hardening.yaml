@@ -39,7 +39,7 @@
       ansible.builtin.set_fact:
         user_account_requests: "{{ user_account_requests | default([]) + [item] }}"
       loop: "{{ user_account_plan | default([]) }}"
-      when: item.username | length > 0
+      when: item.username | length > 0 and item.password | length > 0
       loop_control:
         label: "{{ item.username }}"
 

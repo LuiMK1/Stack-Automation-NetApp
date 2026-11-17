@@ -664,7 +664,6 @@ inputs:
     description: Optional proxy username for sending event notification email. Leave empty to omit it.
   user_accounts:
     type: string
-    sensitive: true
     default: '[{"Username":"user_1","Password":""},{"Username":"user_2","Password":""}]'
     description: >-
       One row per administrator account to create for multi-admin
