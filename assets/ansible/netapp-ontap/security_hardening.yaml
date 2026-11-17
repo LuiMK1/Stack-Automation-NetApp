@@ -43,8 +43,6 @@
       loop_control:
         label: "{{ item.username }}"
 
-   
-
     # Create new administrator accounts to receive multi-admin verification (MAV)
     - name: Create new users to receive multi-admin verification
       netapp.ontap.na_ontap_user:
