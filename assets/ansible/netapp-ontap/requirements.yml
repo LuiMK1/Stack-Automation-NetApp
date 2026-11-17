@@ -1,4 +1,5 @@
 ---
 collections:
   - name: netapp.ontap
+    version: ">=23.0.0"
   - name: torque.collections
