@@ -31,6 +31,7 @@
         normalized_row:
           username: "{{ item.username | default(item['Username'], true) | default('', true) | trim }}"
           password: "{{ item.password | default(item['Password'], true) | default('', true) | trim }}"
+          email: "{{ item.email | default(item['Email'], true) | default('', true) | trim }}"
       loop: "{{ user_account_rows }}"
       loop_control:
         label: "{{ item.username | default(item['Username'], true) | default('unnamed row', true) }}"
@@ -60,5 +61,17 @@
       with_items:
         - "{{ user_account_requests | default([]) }}"
 
-
+    - name: Create an approval group
+      netapp.ontap.na_ontap_mav_approval_group:
+        state: present
+        name: "{{ approval_group_name }}"
+        email: "{{ user_account_requests | default([]) | map(attribute='email') | list }}"
+        approvers: "{{ user_account_requests | default([]) | map(attribute='username') | list }}"
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        use_rest: always
+      when: user_account_requests | default([]) | length > 0
 
