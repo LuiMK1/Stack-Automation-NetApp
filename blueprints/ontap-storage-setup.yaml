@@ -232,12 +232,15 @@ customization:
               - name: audit_log_volume_name
               - name: audit_log_volume_size_gb
               - name: audit_log_aggregate
-          - name: Event Notification Email Settings
+          - name: Security Hardening
             inputs:
               - name: mail_from
               - name: mail_server
               - name: proxy_url
               - name: proxy_user
+              - name: user_accounts
+                type: object
+                header: Username,Password
 
 inputs:
   agent:
@@ -659,6 +662,15 @@ inputs:
     type: string
     default: ""
     description: Optional proxy username for sending event notification email. Leave empty to omit it.
+  user_accounts:
+    type: string
+    default: '[{"Username":"user_1","Password":""},{"Username":"user_2","Password":""},{"Username":"user_3","Password":""}]'
+    description: >-
+      One row per administrator account to create for multi-admin
+      verification (MAV) approval. Each account is created with the admin
+      role and ssh, http, and ontapi access using password authentication.
+      Defaults to 3 blank rows. Leave all rows blank to skip creating these
+      accounts.
 
 grains:
   pre_validation:
@@ -1328,6 +1340,7 @@ grains:
         - mail_server: '{{ .inputs.mail_server }}'
         - proxy_url: '{{ .inputs.proxy_url }}'
         - proxy_user: '{{ .inputs.proxy_user }}'
+        - user_accounts: '{{ .inputs.user_accounts }}'
 
   post_config_validation:
     kind: ansible

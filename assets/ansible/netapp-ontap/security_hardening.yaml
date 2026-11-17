@@ -3,10 +3,17 @@
   hosts: localhost
   connection: local
   gather_facts: false
+  vars:
+    user_account_rows: >-
+      {{
+        (user_accounts | from_json)
+        if user_accounts is string
+        else user_accounts
+      }}
 
   tasks:
 
-    # Configure event notification and logging for the cluster
+     # Configure event notification and logging for the cluster
     - name: Configure event notification for the cluster
       netapp.ontap.na_ontap_rest_cli:
         command: 'event/config'
@@ -17,6 +24,43 @@
         password: "{{ ontap_password }}"
         validate_certs: false
 
+    - name: Normalize user account rows
+      ansible.builtin.set_fact:
+        user_account_plan: "{{ user_account_plan | default([]) + [normalized_row] }}"
+      vars:
+        normalized_row:
+          username: "{{ item.username | default(item['Username'], true) | default('', true) | trim }}"
+          password: "{{ item.password | default(item['Password'], true) | default('', true) | trim }}"
+      loop: "{{ user_account_rows }}"
+      loop_control:
+        label: "{{ item.username | default(item['Username'], true) | default('unnamed row', true) }}"
+
+    - name: Select requested user accounts
+      ansible.builtin.set_fact:
+        user_account_requests: "{{ user_account_requests | default([]) + [item] }}"
+      loop: "{{ user_account_plan | default([]) }}"
+      when: item.username | length > 0
+      loop_control:
+        label: "{{ item.username }}"
+
+   
+
+    # Create new administrator accounts to receive multi-admin verification (MAV)
+    - name: Create new users to receive multi-admin verification
+      netapp.ontap.na_ontap_user:
+        state: present
+        name: "{{ item.username }}"
+        set_password: "{{ item.password }}"
+        role_name: admin
+        applications: ssh,http,ontapi
+        authentication_method: password
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+      with_items:
+        - "{{ user_account_requests | default([]) }}"
 
 
 
