@@ -242,6 +242,10 @@ customization:
                 type: object
                 header: Username,Password,Email
               - name: approval_group_name
+              - name: required_approvers
+              - name: mav_rules
+                type: object
+                header: Operation,Query
 
 inputs:
   agent:
@@ -679,6 +683,20 @@ inputs:
       Name of the multi-admin verification (MAV) approval group. The
       usernames and email addresses from the account rows above are used as
       the group's approvers and notification addresses.
+  required_approvers:
+    type: string
+    default: "1"
+    description: >-
+      Minimum number of approvers required for each multi-admin
+      verification (MAV) rule created below.
+  mav_rules:
+    type: string
+    default: "[]"
+    description: >-
+      One row per ONTAP operation that requires multi-admin verification
+      (MAV) approval, for example "volume delete". Query is optional and
+      restricts the rule to a subset of objects, for example "-vserver
+      svm1". Leave all rows blank to skip creating MAV rules.
 
 grains:
   pre_validation:
@@ -1350,6 +1368,8 @@ grains:
         - proxy_user: '{{ .inputs.proxy_user }}'
         - user_accounts: '{{ .inputs.user_accounts }}'
         - approval_group_name: '{{ .inputs.approval_group_name }}'
+        - required_approvers: '{{ .inputs.required_approvers }}'
+        - mav_rules: '{{ .inputs.mav_rules }}'
 
   post_config_validation:
     kind: ansible
