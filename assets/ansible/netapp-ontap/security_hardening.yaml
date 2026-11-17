@@ -138,6 +138,8 @@
       netapp.ontap.na_ontap_mav_config:
         state: present
         enabled: true
+        approval_groups: ["{{ approval_group_name }}"]
+        required_approvers: "{{ required_approvers | int }}"
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
         password: "{{ ontap_password }}"
