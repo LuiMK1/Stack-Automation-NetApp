@@ -665,12 +665,12 @@ inputs:
   user_accounts:
     type: string
     sensitive: true
-    default: '[{"Username":"user_1","Password":""},{"Username":"user_2","Password":""},{"Username":"user_3","Password":""}]'
+    default: '[{"Username":"user_1","Password":""},{"Username":"user_2","Password":""}]'
     description: >-
       One row per administrator account to create for multi-admin
       verification (MAV) approval. Each account is created with the admin
       role and ssh, http, and ontapi access using password authentication.
-      Defaults to 3 blank rows. Leave all rows blank to skip creating these
+      Defaults to 2 blank rows. Leave all rows blank to skip creating these
       accounts.
 
 grains:
