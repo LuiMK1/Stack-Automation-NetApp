@@ -133,4 +133,16 @@
       loop_control:
         label: "{{ item.operation }}"
       when: user_account_requests | default([]) | length > 0
+  
+    - name: Enable multi-admin approval
+      netapp.ontap.na_ontap_mav_config:
+        state: present
+        enabled: true
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+        use_rest: always
+      when: user_account_requests | default([]) | length > 0
 
