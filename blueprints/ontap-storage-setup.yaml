@@ -238,12 +238,18 @@ customization:
               - name: mail_server
               - name: proxy_url
               - name: proxy_user
-              - name: use_system_defined_event_filters
+              - name: approval_group_name
+              - name: required_approvers
+              - name: mav_user_accounts
+                type: object
+                header: Username,Password,Email
+              - name: mav_rules
+                type: object
+                header: Operation,Query
               - name: ems_destination_system_defined_input_filter
                 type: object
                 header: Name,Destination
               - name: system_defined_event_filters
-              - name: configure_user_defined_event_filter
               - name: user_defined_event_filter
                 type: object
                 header: Name,rule-position,rule-type,rule_message_name,rule-severity
@@ -253,14 +259,6 @@ customization:
               - name: backup_server_url
               - name: backup_server_username
               - name: backup_server_password
-              - name: user_accounts
-                type: object
-                header: Username,Password,Email
-              - name: approval_group_name
-              - name: required_approvers
-              - name: mav_rules
-                type: object
-                header: Operation,Query
               - name: cli_timeout
               - name: cluster_monitor_username
               - name: cluster_monitor_password
@@ -686,22 +684,47 @@ inputs:
     type: string
     default: ""
     description: Optional proxy username for sending event notification email. Leave empty to omit it.
-  use_system_defined_event_filters:
+  approval_group_name:
     type: string
-    default: "true"
-    allowed-values: ["true", "false"]
+    default: "mav_approval_group"
     description: >-
-      Create syslog event notification destinations that use ONTAP
-      system-defined event filters. Defaults to true. Choose false to skip
-      creating them.
+      Name of the multi-admin verification (MAV) approval group. The
+      usernames and email addresses from the account rows below are used as
+      the group's approvers and notification addresses.
+  required_approvers:
+    type: string
+    default: "1"
+    description: >-
+      Minimum number of approvers required for each multi-admin
+      verification (MAV) rule created below.
+  mav_user_accounts:
+    type: string
+    default: '[{"Username":"user_1","Password":"","Email":""},{"Username":"user_2","Password":"","Email":""}]'
+    description: >-
+      One row per administrator account to create for multi-admin
+      verification (MAV) approval. Each account is created with the admin
+      role and ssh, http, and ontapi access using password authentication.
+      Email is captured for MAV approval notifications. Defaults to 2 blank
+      rows. Enter the username, email, and password for each account. At
+      least one account is required to create the approval group and MAV
+      rules below. Leave all rows blank to skip creating these accounts,
+      the approval group, and the MAV rules.
+  mav_rules:
+    type: string
+    default: "[]"
+    description: >-
+      One row per ONTAP operation that requires multi-admin verification
+      (MAV) approval, for example "volume delete". Query is optional and
+      restricts the rule to a subset of objects, for example "-vserver
+      svm1". Leave all rows blank to skip creating MAV rules.
   ems_destination_system_defined_input_filter:
     type: string
     default: "[]"
     description: >-
-      One row per syslog event notification destination. Name is the
-      destination name and Destination is the syslog server name or IP
-      address. Used only when use_system_defined_event_filters is true.
-      Leave all rows blank to skip.
+      One row per syslog event notification destination that uses ONTAP's
+      system-defined event filters. Name is the destination name and
+      Destination is the syslog server name or IP address. Leave all rows
+      blank, or leave system_defined_event_filters empty, to skip.
   system_defined_event_filters:
     type: string
     style: multi-select
@@ -709,15 +732,9 @@ inputs:
     allowed-values: ["default-trap-events", "important-events", "no-info-debug-events"]
     description: >-
       System-defined event filters applied to every destination above.
-      Choose one, two, or all three. Used only when
-      use_system_defined_event_filters is true.
-  configure_user_defined_event_filter:
-    type: string
-    default: "false"
-    allowed-values: ["true", "false"]
-    description: >-
-      Create user-defined EMS event filters with rules. Defaults to false.
-      Choose true to create the filters listed in user_defined_event_filter.
+      Choose one, two, or all three. Leave empty, or leave
+      ems_destination_system_defined_input_filter blank, to skip creating
+      these destinations.
   user_defined_event_filter:
     type: string
     default: "[]"
@@ -727,18 +744,16 @@ inputs:
       position in the filter, rule-type is include or exclude,
       rule_message_name is the message name pattern (for example "callhome.*"
       or "*"), and rule-severity is a comma-separated list of emergency,
-      alert, error, notice, informational, debug, or *. Used only when
-      configure_user_defined_event_filter is true. Leave all rows blank to
-      skip.
+      alert, error, notice, informational, debug, or *. Leave all rows
+      blank to skip.
   ems_destination_user_defined_filter:
     type: string
     default: "[]"
     description: >-
       One row per syslog event notification destination that uses the
       user-defined event filters above. Name is the destination name and
-      Destination is the syslog server name or IP address. Used only when
-      configure_user_defined_event_filter is true. Leave all rows blank to
-      skip.
+      Destination is the syslog server name or IP address. Leave all rows
+      blank, or leave user_defined_event_filter blank, to skip.
   backup_server_url:
     type: string
     default: ""
@@ -756,39 +771,6 @@ inputs:
     sensitive: true
     default: ""
     description: Password for the backup server username.
-  user_accounts:
-    type: string
-    default: '[{"Username":"user_1","Password":"","Email":""},{"Username":"user_2","Password":"","Email":""}]'
-    description: >-
-      One row per administrator account to create for multi-admin
-      verification (MAV) approval. Each account is created with the admin
-      role and ssh, http, and ontapi access using password authentication.
-      Email is captured for MAV approval notifications. Defaults to 2 blank
-      rows. Enter the username, email, and password for each account. At
-      least one account is required to create the approval group and MAV
-      rules below. Leave all rows blank to skip creating these accounts,
-      the approval group, and the MAV rules.
-  approval_group_name:
-    type: string
-    default: "mav_approval_group"
-    description: >-
-      Name of the multi-admin verification (MAV) approval group. The
-      usernames and email addresses from the account rows above are used as
-      the group's approvers and notification addresses.
-  required_approvers:
-    type: string
-    default: "1"
-    description: >-
-      Minimum number of approvers required for each multi-admin
-      verification (MAV) rule created below.
-  mav_rules:
-    type: string
-    default: "[]"
-    description: >-
-      One row per ONTAP operation that requires multi-admin verification
-      (MAV) approval, for example "volume delete". Query is optional and
-      restricts the rule to a subset of objects, for example "-vserver
-      svm1". Leave all rows blank to skip creating MAV rules.
   cli_timeout:
     type: string
     default: "15"
@@ -1482,16 +1464,14 @@ grains:
         - mail_server: '{{ .inputs.mail_server }}'
         - proxy_url: '{{ .inputs.proxy_url }}'
         - proxy_user: '{{ .inputs.proxy_user }}'
-        - use_system_defined_event_filters: '{{ .inputs.use_system_defined_event_filters }}'
         - ems_destination_system_defined_input_filter: '{{ .inputs.ems_destination_system_defined_input_filter }}'
         - system_defined_event_filters: '{{ .inputs.system_defined_event_filters }}'
-        - configure_user_defined_event_filter: '{{ .inputs.configure_user_defined_event_filter }}'
         - user_defined_event_filter: '{{ .inputs.user_defined_event_filter }}'
         - ems_destination_user_defined_filter: '{{ .inputs.ems_destination_user_defined_filter }}'
         - backup_server_url: '{{ .inputs.backup_server_url }}'
         - backup_server_username: '{{ .inputs.backup_server_username }}'
         - backup_server_password: '{{ .inputs.backup_server_password }}'
-        - user_accounts: '{{ .inputs.user_accounts }}'
+        - mav_user_accounts: '{{ .inputs.mav_user_accounts }}'
         - approval_group_name: '{{ .inputs.approval_group_name }}'
         - required_approvers: '{{ .inputs.required_approvers }}'
         - mav_rules: '{{ .inputs.mav_rules }}'

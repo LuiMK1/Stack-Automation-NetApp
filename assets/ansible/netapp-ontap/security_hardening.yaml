@@ -6,9 +6,9 @@
   vars:
     user_account_rows: >-
       {{
-        (user_accounts | from_json)
-        if user_accounts is string
-        else user_accounts
+        (mav_user_accounts | from_json)
+        if mav_user_accounts is string
+        else mav_user_accounts
       }}
     mav_rule_rows: >-
       {{
@@ -194,74 +194,73 @@
 #         use_rest: always
 #       when: user_account_requests | default([]) | length > 0
 
-    - name: Modify the timeout setting for ONTAP CLI login session
-      netapp.ontap.na_ontap_cli_timeout:
-        state: present
-        timeout: "{{ cli_timeout | int }}"
-        hostname: "{{ ontap_hostname }}"
-        username: "{{ ontap_username }}"
-        password: "{{ ontap_password }}"
-        https: true
-        validate_certs: false
-
-    - name: Modify the defaults for the maximum active CLI sessions
-      netapp.ontap.na_ontap_rest_cli:
-        command: 'security/session/limit'
-        verb: 'PATCH'
-        params: {'interface': 'cli','category': '*'}
-        body: {'max-active-limit': '{{ max_active_limit_cli }}'}
-        hostname: "{{ ontap_hostname }}"
-        username: "{{ ontap_username }}"
-        password: "{{ ontap_password }}"
-        https: true
-        validate_certs: false
-    
-    - name: Create a read-only user for monitoring the health of the ONTAP Cluster
-      netapp.ontap.na_ontap_user:
-        state: present
-        use_rest: always
-        name: "{{ cluster_monitor_username }}"
-        applications: ssh
-        authentication_method: password
-        role_name: readonly
-        set_password: "{{ cluster_monitor_password }}"
-        hostname: "{{ ontap_hostname }}"
-        username: "{{ ontap_username }}"
-        password: "{{ ontap_password }}"
-        https: true
-        validate_certs: false
-
-    - name: Enable IPsec on the ONTAP Cluster
-      netapp.ontap.na_ontap_security_ipsec_config:
-        state: present
-        enabled: true
-        hostname: "{{ ontap_hostname }}"
-        username: "{{ ontap_username }}"
-        password: "{{ ontap_password }}"
-        https: true
-        validate_certs: false
-
-#     - name: Create an event notification destination to send notifications to a syslog server (using system-defined event filters)
-#       netapp.ontap.na_ontap_ems_destination:
+#     - name: Modify the timeout setting for ONTAP CLI login session
+#       netapp.ontap.na_ontap_cli_timeout:
 #         state: present
-#         name: "{{ item.name | default(item['Name'], true) | trim }}"
-#         type: syslog
-#         destination: "{{ item.destination | default(item['Destination'], true) | trim }}"
-#         filters: "{{ system_defined_event_filter_list | map('trim') | list }}"
+#         timeout: "{{ cli_timeout | int }}"
 #         hostname: "{{ ontap_hostname }}"
 #         username: "{{ ontap_username }}"
 #         password: "{{ ontap_password }}"
 #         https: true
 #         validate_certs: false
-#       loop: "{{ ems_destination_rows }}"
-#       loop_control:
-#         label: "{{ item.name | default(item['Name'], true) | default('unnamed row', true) }}"
-#       when:
-#         - (use_system_defined_event_filters | string | lower) == 'true'
-#         - system_defined_event_filter_list | length > 0
-#         - (item.name | default(item['Name'], true) | default('', true) | trim) != ''
-#         - (item.destination | default(item['Destination'], true) | default('', true) | trim) != ''
+# 
+#     - name: Modify the defaults for the maximum active CLI sessions
+#       netapp.ontap.na_ontap_rest_cli:
+#         command: 'security/session/limit'
+#         verb: 'PATCH'
+#         params: {'interface': 'cli','category': '*'}
+#         body: {'max-active-limit': '{{ max_active_limit_cli }}'}
+#         hostname: "{{ ontap_hostname }}"
+#         username: "{{ ontap_username }}"
+#         password: "{{ ontap_password }}"
+#         https: true
+#         validate_certs: false
 #     
+#     - name: Create a read-only user for monitoring the health of the ONTAP Cluster
+#       netapp.ontap.na_ontap_user:
+#         state: present
+#         use_rest: always
+#         name: "{{ cluster_monitor_username }}"
+#         applications: ssh
+#         authentication_method: password
+#         role_name: readonly
+#         set_password: "{{ cluster_monitor_password }}"
+#         hostname: "{{ ontap_hostname }}"
+#         username: "{{ ontap_username }}"
+#         password: "{{ ontap_password }}"
+#         https: true
+#         validate_certs: false
+# 
+#     - name: Enable IPsec on the ONTAP Cluster
+#       netapp.ontap.na_ontap_security_ipsec_config:
+#         state: present
+#         enabled: true
+#         hostname: "{{ ontap_hostname }}"
+#         username: "{{ ontap_username }}"
+#         password: "{{ ontap_password }}"
+#         https: true
+#         validate_certs: false
+# 
+    - name: Create an event notification destination to send notifications to a syslog server (using system-defined event filters)
+      netapp.ontap.na_ontap_ems_destination:
+        state: present
+        name: "{{ item.name | default(item['Name'], true) | trim }}"
+        type: syslog
+        destination: "{{ item.destination | default(item['Destination'], true) | trim }}"
+        filters: "{{ system_defined_event_filter_list | map('trim') | list }}"
+        hostname: "{{ ontap_hostname }}"
+        username: "{{ ontap_username }}"
+        password: "{{ ontap_password }}"
+        https: true
+        validate_certs: false
+      loop: "{{ ems_destination_rows }}"
+      loop_control:
+        label: "{{ item.name | default(item['Name'], true) | default('unnamed row', true) }}"
+      when:
+        - system_defined_event_filter_list | length > 0
+        - (item.name | default(item['Name'], true) | default('', true) | trim) != ''
+        - (item.destination | default(item['Destination'], true) | default('', true) | trim) != ''
+    
 #     - name: Create user-defined new event filter with rules
 #       netapp.ontap.na_ontap_ems_filter:
 #         state: present
@@ -281,7 +280,6 @@
 #       loop_control:
 #         label: "{{ item['Name'] | default('unnamed row', true) }} / rule {{ item['rule-position'] | default('?') }}"
 #       when:
-#         - (configure_user_defined_event_filter | default('false') | string | lower) == 'true'
 #         - (item['Name'] | default('', true) | trim) != ''
 #         - (item['rule_message_name'] | default('', true) | trim) != ''
 #     
@@ -301,7 +299,6 @@
 #       loop_control:
 #         label: "{{ item.name | default(item['Name'], true) | default('unnamed row', true) }}"
 #       when:
-#         - (configure_user_defined_event_filter | default('false') | string | lower) == 'true'
 #         - user_defined_event_filter_names | length > 0
 #         - (item.name | default(item['Name'], true) | default('', true) | trim) != ''
 #         - (item.destination | default(item['Destination'], true) | default('', true) | trim) != ''
