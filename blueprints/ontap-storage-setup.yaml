@@ -238,6 +238,21 @@ customization:
               - name: mail_server
               - name: proxy_url
               - name: proxy_user
+              - name: use_system_defined_event_filters
+              - name: ems_destination_system_defined_input_filter
+                type: object
+                header: Name,Destination
+              - name: system_defined_event_filters
+              - name: configure_user_defined_event_filter
+              - name: user_defined_event_filter
+                type: object
+                header: Name,rule-position,rule-type,rule_message_name,rule-severity
+              - name: ems_destination_user_defined_filter
+                type: object
+                header: Name,Destination
+              - name: backup_server_url
+              - name: backup_server_username
+              - name: backup_server_password
               - name: user_accounts
                 type: object
                 header: Username,Password,Email
@@ -246,6 +261,10 @@ customization:
               - name: mav_rules
                 type: object
                 header: Operation,Query
+              - name: cli_timeout
+              - name: cluster_monitor_username
+              - name: cluster_monitor_password
+              - name: max_active_limit_cli
 
 inputs:
   agent:
@@ -667,6 +686,76 @@ inputs:
     type: string
     default: ""
     description: Optional proxy username for sending event notification email. Leave empty to omit it.
+  use_system_defined_event_filters:
+    type: string
+    default: "true"
+    allowed-values: ["true", "false"]
+    description: >-
+      Create syslog event notification destinations that use ONTAP
+      system-defined event filters. Defaults to true. Choose false to skip
+      creating them.
+  ems_destination_system_defined_input_filter:
+    type: string
+    default: "[]"
+    description: >-
+      One row per syslog event notification destination. Name is the
+      destination name and Destination is the syslog server name or IP
+      address. Used only when use_system_defined_event_filters is true.
+      Leave all rows blank to skip.
+  system_defined_event_filters:
+    type: string
+    style: multi-select
+    default: "[]"
+    allowed-values: ["default-trap-events", "important-events", "no-info-debug-events"]
+    description: >-
+      System-defined event filters applied to every destination above.
+      Choose one, two, or all three. Used only when
+      use_system_defined_event_filters is true.
+  configure_user_defined_event_filter:
+    type: string
+    default: "false"
+    allowed-values: ["true", "false"]
+    description: >-
+      Create user-defined EMS event filters with rules. Defaults to false.
+      Choose true to create the filters listed in user_defined_event_filter.
+  user_defined_event_filter:
+    type: string
+    default: "[]"
+    description: >-
+      One row per EMS filter rule. Name is the filter name (repeat it on each
+      row to add more rules to the same filter). rule-position is the rule's
+      position in the filter, rule-type is include or exclude,
+      rule_message_name is the message name pattern (for example "callhome.*"
+      or "*"), and rule-severity is a comma-separated list of emergency,
+      alert, error, notice, informational, debug, or *. Used only when
+      configure_user_defined_event_filter is true. Leave all rows blank to
+      skip.
+  ems_destination_user_defined_filter:
+    type: string
+    default: "[]"
+    description: >-
+      One row per syslog event notification destination that uses the
+      user-defined event filters above. Name is the destination name and
+      Destination is the syslog server name or IP address. Used only when
+      configure_user_defined_event_filter is true. Leave all rows blank to
+      skip.
+  backup_server_url:
+    type: string
+    default: ""
+    description: >-
+      URL of the server that receives automated cluster configuration
+      backups, for example "ftp://backup.example.com/ontap" or
+      "https://backup.example.com/ontap". Leave blank to skip configuring
+      the backup upload destination.
+  backup_server_username:
+    type: string
+    default: "admin"
+    description: Username used to log in to the backup server.
+  backup_server_password:
+    type: string
+    sensitive: true
+    default: ""
+    description: Password for the backup server username.
   user_accounts:
     type: string
     default: '[{"Username":"user_1","Password":"","Email":""},{"Username":"user_2","Password":"","Email":""}]'
@@ -675,7 +764,10 @@ inputs:
       verification (MAV) approval. Each account is created with the admin
       role and ssh, http, and ontapi access using password authentication.
       Email is captured for MAV approval notifications. Defaults to 2 blank
-      rows. Leave all rows blank to skip creating these accounts.
+      rows. Enter the username, email, and password for each account. At
+      least one account is required to create the approval group and MAV
+      rules below. Leave all rows blank to skip creating these accounts,
+      the approval group, and the MAV rules.
   approval_group_name:
     type: string
     default: "mav_approval_group"
@@ -697,7 +789,31 @@ inputs:
       (MAV) approval, for example "volume delete". Query is optional and
       restricts the rule to a subset of objects, for example "-vserver
       svm1". Leave all rows blank to skip creating MAV rules.
-
+  cli_timeout:
+    type: string
+    default: "15"
+    description: >-
+      ONTAP CLI login session timeout, in minutes. The cluster's minimum
+      granularity is whole minutes. Set to 0 to disable the timeout so CLI
+      sessions never expire.
+  cluster_monitor_username:
+    type: string
+    default: "fpmonitor"
+    description: >-
+      Username for the read-only account created to monitor cluster
+      health. The account is created with the readonly role and ssh
+      access using password authentication.
+  cluster_monitor_password:
+    type: string
+    sensitive: true
+    default: ""
+    description: Password for the cluster_monitor_username read-only monitoring account.
+  max_active_limit_cli:
+    type: string
+    default: "8"
+    description: >-
+      Maximum number of concurrent ONTAP CLI sessions allowed per user,
+      interface, and category.
 grains:
   pre_validation:
     kind: ansible
@@ -1366,10 +1482,24 @@ grains:
         - mail_server: '{{ .inputs.mail_server }}'
         - proxy_url: '{{ .inputs.proxy_url }}'
         - proxy_user: '{{ .inputs.proxy_user }}'
+        - use_system_defined_event_filters: '{{ .inputs.use_system_defined_event_filters }}'
+        - ems_destination_system_defined_input_filter: '{{ .inputs.ems_destination_system_defined_input_filter }}'
+        - system_defined_event_filters: '{{ .inputs.system_defined_event_filters }}'
+        - configure_user_defined_event_filter: '{{ .inputs.configure_user_defined_event_filter }}'
+        - user_defined_event_filter: '{{ .inputs.user_defined_event_filter }}'
+        - ems_destination_user_defined_filter: '{{ .inputs.ems_destination_user_defined_filter }}'
+        - backup_server_url: '{{ .inputs.backup_server_url }}'
+        - backup_server_username: '{{ .inputs.backup_server_username }}'
+        - backup_server_password: '{{ .inputs.backup_server_password }}'
         - user_accounts: '{{ .inputs.user_accounts }}'
         - approval_group_name: '{{ .inputs.approval_group_name }}'
         - required_approvers: '{{ .inputs.required_approvers }}'
         - mav_rules: '{{ .inputs.mav_rules }}'
+        - cli_timeout: '{{ .inputs.cli_timeout }}'
+        - cluster_monitor_username: '{{ .inputs.cluster_monitor_username }}'
+        - cluster_monitor_password: '{{ .inputs.cluster_monitor_password }}'
+        - max_active_limit_cli: '{{ .inputs.max_active_limit_cli }}'
+        - svm_name: '{{ .inputs.svm_name }}'
 
   post_config_validation:
     kind: ansible
