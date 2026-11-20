@@ -246,16 +246,7 @@ customization:
               - name: mav_rules
                 type: object
                 header: Operation,Query
-              - name: ems_destination_system_defined_input_filter
-                type: object
-                header: Name,Destination
-              - name: system_defined_event_filters
-              - name: user_defined_event_filter
-                type: object
-                header: Name,rule-position,rule-type,rule_message_name,rule-severity
-              - name: ems_destination_user_defined_filter
-                type: object
-                header: Name,Destination
+              - name: ems_destination_email
               - name: backup_server_url
               - name: backup_server_username
               - name: backup_server_password
@@ -717,43 +708,12 @@ inputs:
       (MAV) approval, for example "volume delete". Query is optional and
       restricts the rule to a subset of objects, for example "-vserver
       svm1". Leave all rows blank to skip creating MAV rules.
-  ems_destination_system_defined_input_filter:
+  ems_destination_email:
     type: string
-    default: "[]"
+    default: ""
     description: >-
-      One row per syslog event notification destination that uses ONTAP's
-      system-defined event filters. Name is the destination name and
-      Destination is the syslog server name or IP address. Leave all rows
-      blank, or leave system_defined_event_filters empty, to skip.
-  system_defined_event_filters:
-    type: string
-    style: multi-select
-    default: "[]"
-    allowed-values: ["default-trap-events", "important-events", "no-info-debug-events"]
-    description: >-
-      System-defined event filters applied to every destination above.
-      Choose one, two, or all three. Leave empty, or leave
-      ems_destination_system_defined_input_filter blank, to skip creating
-      these destinations.
-  user_defined_event_filter:
-    type: string
-    default: "[]"
-    description: >-
-      One row per EMS filter rule. Name is the filter name (repeat it on each
-      row to add more rules to the same filter). rule-position is the rule's
-      position in the filter, rule-type is include or exclude,
-      rule_message_name is the message name pattern (for example "callhome.*"
-      or "*"), and rule-severity is a comma-separated list of emergency,
-      alert, error, notice, informational, debug, or *. Leave all rows
-      blank to skip.
-  ems_destination_user_defined_filter:
-    type: string
-    default: "[]"
-    description: >-
-      One row per syslog event notification destination that uses the
-      user-defined event filters above. Name is the destination name and
-      Destination is the syslog server name or IP address. Leave all rows
-      blank, or leave user_defined_event_filter blank, to skip.
+      Email address that receives important-events notifications. Leave
+      blank to skip creating this event notification destination.
   backup_server_url:
     type: string
     default: ""
@@ -1464,10 +1424,7 @@ grains:
         - mail_server: '{{ .inputs.mail_server }}'
         - proxy_url: '{{ .inputs.proxy_url }}'
         - proxy_user: '{{ .inputs.proxy_user }}'
-        - ems_destination_system_defined_input_filter: '{{ .inputs.ems_destination_system_defined_input_filter }}'
-        - system_defined_event_filters: '{{ .inputs.system_defined_event_filters }}'
-        - user_defined_event_filter: '{{ .inputs.user_defined_event_filter }}'
-        - ems_destination_user_defined_filter: '{{ .inputs.ems_destination_user_defined_filter }}'
+        - ems_destination_email: '{{ .inputs.ems_destination_email }}'
         - backup_server_url: '{{ .inputs.backup_server_url }}'
         - backup_server_username: '{{ .inputs.backup_server_username }}'
         - backup_server_password: '{{ .inputs.backup_server_password }}'
