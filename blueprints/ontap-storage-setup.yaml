@@ -238,6 +238,10 @@ customization:
               - name: mail_server
               - name: proxy_url
               - name: proxy_user
+              - name: ems_destination_email
+              - name: backup_server_url
+              - name: backup_server_username
+              - name: backup_server_password
               - name: approval_group_name
               - name: required_approvers
               - name: mav_user_accounts
@@ -246,13 +250,9 @@ customization:
               - name: mav_rules
                 type: object
                 header: Operation,Query
-              - name: ems_destination_email
-              - name: backup_server_url
-              - name: backup_server_username
-              - name: backup_server_password
-              - name: cli_timeout
               - name: cluster_monitor_username
               - name: cluster_monitor_password
+              - name: cli_timeout
               - name: max_active_limit_cli
 
 inputs:
@@ -675,39 +675,6 @@ inputs:
     type: string
     default: ""
     description: Optional proxy username for sending event notification email. Leave empty to omit it.
-  approval_group_name:
-    type: string
-    default: "mav_approval_group"
-    description: >-
-      Name of the multi-admin verification (MAV) approval group. The
-      usernames and email addresses from the account rows below are used as
-      the group's approvers and notification addresses.
-  required_approvers:
-    type: string
-    default: "1"
-    description: >-
-      Minimum number of approvers required for each multi-admin
-      verification (MAV) rule created below.
-  mav_user_accounts:
-    type: string
-    default: '[{"Username":"user_1","Password":"","Email":""},{"Username":"user_2","Password":"","Email":""}]'
-    description: >-
-      One row per administrator account to create for multi-admin
-      verification (MAV) approval. Each account is created with the admin
-      role and ssh, http, and ontapi access using password authentication.
-      Email is captured for MAV approval notifications. Defaults to 2 blank
-      rows. Enter the username, email, and password for each account. At
-      least one account is required to create the approval group and MAV
-      rules below. Leave all rows blank to skip creating these accounts,
-      the approval group, and the MAV rules.
-  mav_rules:
-    type: string
-    default: "[]"
-    description: >-
-      One row per ONTAP operation that requires multi-admin verification
-      (MAV) approval, for example "volume delete". Query is optional and
-      restricts the rule to a subset of objects, for example "-vserver
-      svm1". Leave all rows blank to skip creating MAV rules.
   ems_destination_email:
     type: string
     default: ""
@@ -731,13 +698,41 @@ inputs:
     sensitive: true
     default: ""
     description: Password for the backup server username.
-  cli_timeout:
+  approval_group_name:
     type: string
-    default: "15"
+    default: "mav_approval_group"
     description: >-
-      ONTAP CLI login session timeout, in minutes. The cluster's minimum
-      granularity is whole minutes. Set to 0 to disable the timeout so CLI
-      sessions never expire.
+      Name of the multi-admin verification (MAV) approval group. The
+      usernames and email addresses from the account rows below are used as
+      the group's approvers and notification addresses.
+  required_approvers:
+    type: string
+    default: "1"
+    description: >-
+      Minimum number of approvers required for each multi-admin
+      verification (MAV) rule created below. Minimum is 1, and the value
+      must not exceed the number of accounts being created in
+      mav_user_accounts.
+  mav_user_accounts:
+    type: string
+    default: '[{"Username":"user_1","Password":"","Email":""},{"Username":"user_2","Password":"","Email":""}]'
+    description: >-
+      One row per administrator account to create for multi-admin
+      verification (MAV) approval. Each account is created with the admin
+      role and ssh, http, and ontapi access using password authentication.
+      Email is captured for MAV approval notifications. Defaults to 2 blank
+      rows. Enter the username, email, and password for each account. At
+      least one account is required to create the approval group and MAV
+      rules below. Leave all rows blank to skip creating these accounts,
+      the approval group, and the MAV rules.
+  mav_rules:
+    type: string
+    default: "[]"
+    description: >-
+      One row per ONTAP operation that requires multi-admin verification
+      (MAV) approval, for example "volume delete". Query is optional and
+      restricts the rule to a subset of objects, for example "-vserver
+      svm1". Leave all rows blank to skip creating MAV rules.
   cluster_monitor_username:
     type: string
     default: "fpmonitor"
@@ -750,12 +745,19 @@ inputs:
     sensitive: true
     default: ""
     description: Password for the cluster_monitor_username read-only monitoring account.
+  cli_timeout:
+    type: string
+    default: ""
+    description: >-
+      ONTAP CLI login session timeout, in minutes. The cluster's minimum
+      granularity is whole minutes. Leave blank to stick with the default,
+      which is 30 minutes.
   max_active_limit_cli:
     type: string
-    default: "8"
+    default: ""
     description: >-
       Maximum number of concurrent ONTAP CLI sessions allowed per user,
-      interface, and category.
+      interface, and category. Leave blank to stick with the default.
 grains:
   pre_validation:
     kind: ansible

@@ -215,8 +215,6 @@
         https: true
         validate_certs: false
 
-    
-
     - name: Set up an automated ONTAP Cluster configuration backup upload destination
       netapp.ontap.na_ontap_support_config_backup:
         state: present
