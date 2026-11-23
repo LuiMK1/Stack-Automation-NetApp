@@ -149,7 +149,7 @@
           - cluster/nodes
         fields:
           - membership
-          - cluster_interface
+          - cluster_interfaces
         https: true
         validate_certs: false
       register: discovered_nodes
@@ -168,7 +168,7 @@
     - name: Join available nodes to the cluster
       netapp.ontap.na_ontap_cluster:
         state: present
-        cluster_ip_address: "{{ item.cluster_interface.ip.address }}"
+        cluster_ip_address: "{{ item.cluster_interfaces[0].ip.address }}"
         use_rest: always
         hostname: "{{ ontap_hostname }}"
         username: "{{ ontap_username }}"
@@ -181,7 +181,7 @@
           | selectattr('membership', 'equalto', 'available') | list
         }}
       loop_control:
-        label: "{{ item.cluster_interface.ip.address | default('unknown') }}"
+        label: "{{ (item.cluster_interfaces | default([{}], true) | first).ip.address | default('unknown') }}"
       when: cluster_node_plan | default([]) | length > 1
 
     - name: Verify the expected number of nodes joined the cluster
