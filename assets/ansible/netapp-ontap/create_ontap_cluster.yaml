@@ -153,17 +153,16 @@
         https: true
         validate_certs: false
       register: discovered_nodes
-      until: >-
-        (discovered_nodes.ontap_info['cluster/nodes'] | default({}, true)).records | default([])
-        | selectattr('membership', 'equalto', 'available') | list | length == 0
-      retries: 10
-      delay: 30
-      when: cluster_node_plan | default([]) | length > 1
+      when:
+        - not (cluster_exists | bool)
+        - cluster_node_plan | default([]) | length > 1
 
     - name: Print discovered_nodes for debugging
       ansible.builtin.debug:
         var: discovered_nodes
-      when: cluster_node_plan | default([]) | length > 1
+      when:
+        - not (cluster_exists | bool)
+        - cluster_node_plan | default([]) | length > 1
 
     - name: Join available nodes to the cluster
       netapp.ontap.na_ontap_cluster:
@@ -182,7 +181,9 @@
         }}
       loop_control:
         label: "{{ (item.cluster_interfaces | default([{}], true) | first).ip.address | default('unknown') }}"
-      when: cluster_node_plan | default([]) | length > 1
+      when:
+        - not (cluster_exists | bool)
+        - cluster_node_plan | default([]) | length > 1
 
     - name: Verify the expected number of nodes joined the cluster
       netapp.ontap.na_ontap_rest_info:
@@ -196,7 +197,9 @@
         https: true
         validate_certs: false
       register: final_nodes
-      when: cluster_node_plan | default([]) | length > 0
+      when:
+        - not (cluster_exists | bool)
+        - cluster_node_plan | default([]) | length > 0
 
     - name: Fail if not all expected nodes joined the cluster
       ansible.builtin.assert:
@@ -208,4 +211,6 @@
           Records: {{ (final_nodes.ontap_info['cluster/nodes'] | default({}, true)).records | default([]) }}
         success_msg: >-
           All {{ cluster_node_plan | default([]) | length }} node(s) are members of the cluster.
-      when: cluster_node_plan | default([]) | length > 0
+      when:
+        - not (cluster_exists | bool)
+        - cluster_node_plan | default([]) | length > 0
