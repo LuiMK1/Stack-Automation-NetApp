@@ -691,7 +691,7 @@ inputs:
       the backup upload destination.
   backup_server_username:
     type: string
-    default: "admin"
+    default: ""
     description: Username used to log in to the backup server.
   backup_server_password:
     type: string
