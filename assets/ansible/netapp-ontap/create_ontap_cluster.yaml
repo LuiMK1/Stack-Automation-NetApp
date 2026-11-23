@@ -37,7 +37,19 @@
       register: existing_cluster
       ignore_errors: true
 
-    # A failed GET means no cluster is reachable at ontap_hostname yet.
+    - name: Fail if the existing cluster rejects the supplied credentials
+      ansible.builtin.fail:
+        msg: >-
+          A cluster is reachable at {{ ontap_hostname }} but rejected the
+          credentials for '{{ ontap_username }}' (401 not authorized). Check
+          ontap_username/ontap_password.
+      when:
+        - existing_cluster is failed
+        - >-
+          ('401' in (existing_cluster.msg | default('') | string))
+          or ('not authorized' in (existing_cluster.msg | default('') | string | lower))
+
+    # Any other failed GET means no cluster is reachable at ontap_hostname yet.
     - name: Record whether the cluster already exists
       ansible.builtin.set_fact:
         cluster_exists: "{{ existing_cluster is succeeded }}"
