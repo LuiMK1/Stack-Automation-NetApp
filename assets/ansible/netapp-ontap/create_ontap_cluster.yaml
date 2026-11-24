@@ -13,89 +13,127 @@
 
   tasks:
 
-    - name: Build the node plan, skipping rows without a node name
-      ansible.builtin.set_fact:
-        cluster_node_plan: >-
-          {%- set plan = [] -%}
-          {%- for row in node_rows -%}
-          {%- set name = (row.node_name | default(row['Node Name'], true) | default('', true)) | string | trim -%}
-          {%- if name | length > 0 -%}
-          {%- set _ = plan.append({'node_name': name}) -%}
-          {%- endif -%}
-          {%- endfor -%}
-          {{ plan }}
-
-    - name: Check if the cluster already exists
-      netapp.ontap.na_ontap_rest_info:
-        hostname: "{{ ontap_hostname }}"
-        username: "{{ ontap_username }}"
-        password: "{{ ontap_password }}"
-        gather_subset:
-          - cluster
-        https: true
-        validate_certs: false
-      register: existing_cluster
-      ignore_errors: true
-
-    - name: Fail if the existing cluster rejects the supplied credentials
-      ansible.builtin.fail:
-        msg: >-
-          A cluster is reachable at {{ ontap_hostname }} but rejected the
-          credentials for '{{ ontap_username }}' (401 not authorized). Check
-          ontap_username/ontap_password.
-      when:
-        - existing_cluster is failed
-        - >-
-          ('401' in (existing_cluster.msg | default('') | string))
-          or ('not authorized' in (existing_cluster.msg | default('') | string | lower))
-
-    # Any other failed GET means no cluster is reachable at ontap_hostname yet.
-    - name: Record whether the cluster already exists
-      ansible.builtin.set_fact:
-        cluster_exists: "{{ existing_cluster is succeeded }}"
-        existing_cluster_name: >-
-          {{
-            ((existing_cluster.ontap_info | default({}, true)).get('cluster') or {}).get('name', '')
-          }}
-
-    - name: Fail if a different cluster already answers at the management IP
-      ansible.builtin.assert:
-        that:
-          - existing_cluster_name == '' or existing_cluster_name == (cluster_name | trim)
-        fail_msg: >-
-          A cluster named '{{ existing_cluster_name }}' already exists at
-          {{ ontap_hostname }}, expected '{{ cluster_name }}'.
-      when: cluster_exists | bool
-
-    - name: Validate cluster bootstrap inputs
-      ansible.builtin.assert:
-        that:
-          - cluster_node_plan | default([]) | length > 0
-          - (node1_ip | default('', true) | trim) != ''
-          - (cluster_name | default('', true) | trim) != ''
-          - (cluster_mgmt_netmask | default('', true) | trim) != ''
-          - (cluster_mgmt_gateway | default('', true) | trim) != ''
-        fail_msg: >-
-          Cluster creation needs at least one node_specs row with a node
-          name, plus node1_ip, cluster_name, cluster_mgmt_netmask, and
-          cluster_mgmt_gateway.
-      when: not (cluster_exists | bool)
-
-    - name: Create the cluster on the first node
-      netapp.ontap.na_ontap_restit:
-        api: /cluster
-        method: POST
-        query:
-          return_timeout: 180
-        body:
-          name: "{{ cluster_name }}"
-          password: "{{ ontap_password }}"
-        hostname: "{{ node1_ip }}"
-        username: admin
-        password: ""
-        https: true
-        validate_certs: false
-      when: not (cluster_exists | bool)
+#     - name: Build the node plan, skipping rows without a node name
+#       ansible.builtin.set_fact:
+#         cluster_node_plan: >-
+#           {%- set plan = [] -%}
+#           {%- for row in node_rows -%}
+#           {%- set name = (row.node_name | default(row['Node Name'], true) | default('', true)) | string | trim -%}
+#           {%- if name | length > 0 -%}
+#           {%- set _ = plan.append({'node_name': name}) -%}
+#           {%- endif -%}
+#           {%- endfor -%}
+#           {{ plan }}
+# 
+#     - name: Check if the cluster already exists
+#       netapp.ontap.na_ontap_rest_info:
+#         hostname: "{{ ontap_hostname }}"
+#         username: "{{ ontap_username }}"
+#         password: "{{ ontap_password }}"
+#         gather_subset:
+#           - cluster
+#         https: true
+#         validate_certs: false
+#       register: existing_cluster
+#       ignore_errors: true
+# 
+#     - name: Fail if the existing cluster rejects the supplied credentials
+#       ansible.builtin.fail:
+#         msg: >-
+#           A cluster is reachable at {{ ontap_hostname }} but rejected the
+#           credentials for '{{ ontap_username }}' (401 not authorized). Check
+#           ontap_username/ontap_password.
+#       when:
+#         - existing_cluster is failed
+#         - >-
+#           ('401' in (existing_cluster.msg | default('') | string))
+#           or ('not authorized' in (existing_cluster.msg | default('') | string | lower))
+# 
+#     # Any other failed GET means no cluster is reachable at ontap_hostname yet.
+#     - name: Record whether the cluster already exists
+#       ansible.builtin.set_fact:
+#         cluster_exists: "{{ existing_cluster is succeeded }}"
+#         existing_cluster_name: >-
+#           {{
+#             ((existing_cluster.ontap_info | default({}, true)).get('cluster') or {}).get('name', '')
+#           }}
+# 
+#     - name: Fail if a different cluster already answers at the management IP
+#       ansible.builtin.assert:
+#         that:
+#           - existing_cluster_name == '' or existing_cluster_name == (cluster_name | trim)
+#         fail_msg: >-
+#           A cluster named '{{ existing_cluster_name }}' already exists at
+#           {{ ontap_hostname }}, expected '{{ cluster_name }}'.
+#       when: cluster_exists | bool
+# 
+#     - name: Validate cluster bootstrap inputs
+#       ansible.builtin.assert:
+#         that:
+#           - cluster_node_plan | default([]) | length > 0
+#           - (node1_ip | default('', true) | trim) != ''
+#           - (cluster_name | default('', true) | trim) != ''
+#           - (cluster_mgmt_netmask | default('', true) | trim) != ''
+#           - (cluster_mgmt_gateway | default('', true) | trim) != ''
+#         fail_msg: >-
+#           Cluster creation needs at least one node_specs row with a node
+#           name, plus node1_ip, cluster_name, cluster_mgmt_netmask, and
+#           cluster_mgmt_gateway.
+#       when: not (cluster_exists | bool)
+# 
+#     - name: Create the cluster on the first node
+#       netapp.ontap.na_ontap_restit:
+#         api: /cluster
+#         method: POST
+#         body:
+#           name: "{{ cluster_name }}"
+#           password: "{{ ontap_password }}"
+#         hostname: "{{ node1_ip }}"
+#         username: admin
+#         password: ""
+#         https: true
+#         validate_certs: false
+#       register: cluster_create
+#       when: not (cluster_exists | bool)
+# 
+#     - name: Extract the cluster create job UUID
+#       ansible.builtin.set_fact:
+#         cluster_create_job_uuid: "{{ cluster_create.response.job.uuid | default('', true) }}"
+#       when: not (cluster_exists | bool)
+# 
+#     - name: Fail if the cluster create call returned no job UUID
+#       ansible.builtin.assert:
+#         that:
+#           - cluster_create_job_uuid != ''
+#         fail_msg: "Cluster create returned no job UUID: {{ cluster_create.response | default({}) }}"
+#       when: not (cluster_exists | bool)
+# 
+#     - name: Track the cluster create job until it finishes
+#       netapp.ontap.na_ontap_restit:
+#         api: "cluster/jobs/{{ cluster_create_job_uuid }}"
+#         method: GET
+#         hostname: "{{ node1_ip }}"
+#         username: admin
+#         password: ""
+#         https: true
+#         validate_certs: false
+#       register: cluster_create_job
+#       until:
+#         - cluster_create_job is succeeded
+#         - cluster_create_job.response.state | default('') in ['success', 'failure']
+#       retries: 60
+#       delay: 10
+#       when: not (cluster_exists | bool)
+# 
+#     - name: Fail if the cluster create job did not succeed
+#       ansible.builtin.assert:
+#         that:
+#           - cluster_create_job.response.state == 'success'
+#         fail_msg: >-
+#           Cluster create job {{ cluster_create_job_uuid }} ended in state
+#           '{{ cluster_create_job.response.state }}':
+#           {{ cluster_create_job.response.message | default('') }}
+#       when: not (cluster_exists | bool)
 
     - name: Create the cluster management interface
       netapp.ontap.na_ontap_interface:
