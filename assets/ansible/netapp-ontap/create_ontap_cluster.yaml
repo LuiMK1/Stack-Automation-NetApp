@@ -82,13 +82,17 @@
       when: not (cluster_exists | bool)
 
     - name: Create the cluster on the first node
-      netapp.ontap.na_ontap_cluster:
-        state: present
-        cluster_name: "{{ cluster_name }}"
+      netapp.ontap.na_ontap_restit:
+        api: /cluster
+        method: POST
+        query:
+          return_timeout: 180
+        body:
+          name: "{{ cluster_name }}"
+          password: "{{ ontap_password }}"
         hostname: "{{ node1_ip }}"
         username: admin
         password: ""
-        use_rest: always
         https: true
         validate_certs: false
       when: not (cluster_exists | bool)
