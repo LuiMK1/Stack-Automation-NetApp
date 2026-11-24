@@ -4,6 +4,7 @@
   connection: local
   gather_facts: false
   vars:
+    cluster_exists: false  # TEMP: hardcoded for testing while the existence check is commented out
     node_rows: >-
       {{
         (node_specs | from_json)
