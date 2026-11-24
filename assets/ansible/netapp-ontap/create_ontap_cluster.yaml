@@ -87,13 +87,12 @@
         cluster_name: "{{ cluster_name }}"
         hostname: "{{ node1_ip }}"
         username: admin
-        password: "{{ontap_password}}"
+        password: ""
         use_rest: always
         https: true
         validate_certs: false
       when: not (cluster_exists | bool)
 
-  
     - name: Create the cluster management interface
       netapp.ontap.na_ontap_interface:
         state: present
