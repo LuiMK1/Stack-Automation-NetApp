@@ -87,6 +87,35 @@
           {{ ontap_hostname }}, expected '{{ cluster_name }}'.
       when: cluster_exists | bool
 
+    - name: Check whether node1 already has an admin password set
+      netapp.ontap.na_ontap_rest_info:
+        hostname: "{{ node1_ip }}"
+        username: admin
+        password: ""
+        gather_subset:
+          - cluster
+        https: true
+        validate_certs: false
+      register: node1_precluster_check
+      ignore_errors: true
+      when: not (cluster_exists | bool)
+
+    - name: Fail if node1 already belongs to a different cluster
+      ansible.builtin.fail:
+        msg: >-
+          node1_ip ({{ node1_ip }}) rejected the blank bootstrap password,
+          which means it already has an admin password set and is likely
+          already part of a cluster (possibly reachable at a different
+          management IP than {{ ontap_hostname }}). Refusing to proceed -
+          verify node1_ip before creating or modifying the cluster management
+          interface and default route.
+      when:
+        - not (cluster_exists | bool)
+        - node1_precluster_check is failed
+        - >-
+          ('401' in (node1_precluster_check.msg | default('') | string))
+          or ('not authorized' in (node1_precluster_check.msg | default('') | string | lower))
+
     - name: Create the cluster on the first node
       netapp.ontap.na_ontap_restit:
         api: /cluster
