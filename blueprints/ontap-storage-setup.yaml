@@ -155,7 +155,6 @@ customization:
               - name: ontap_username
               - name: ontap_password
               - name: cluster_name
-              - name: node1_ip
               - name: cluster_mgmt_netmask
               - name: cluster_mgmt_gateway
               - name: cluster_location
@@ -165,7 +164,7 @@ customization:
             inputs:
               - name: node_specs
                 type: object
-                header: Node Name,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name, NFS LIF Address, NFS LIF Netmask,iSCSI A LIF Name,iSCSI A LIF Address,iSCSI A LIF Netmask,iSCSI B LIF Name,iSCSI B LIF Address,iSCSI B LIF Netmask
+                header: Node Name,Node Mgmt IP,SP IP,SP Netmask,SP Gateway,Data Ports,Aggregate Name,Disk Count,NFS LIF Name, NFS LIF Address, NFS LIF Netmask,iSCSI A LIF Name,iSCSI A LIF Address,iSCSI A LIF Netmask,iSCSI B LIF Name,iSCSI B LIF Address,iSCSI B LIF Netmask
           - name: DNS and NTP
             inputs:
               - name: dns_domain_name
@@ -263,13 +262,6 @@ inputs:
     type: string
     default: ""
     description: Location string stored on the cluster.
-  node1_ip:
-    type: string
-    default: ""
-    description: >-
-      Management IP address of the first node, used only to create a new
-      cluster. The remaining nodes are discovered and joined automatically.
-      Leave blank if the cluster already exists.
   cluster_mgmt_netmask:
     type: string
     default: ""
@@ -286,7 +278,9 @@ inputs:
     type: string
     default: "[]"
     description: >-
-      One row per node. The node name is entered once and applies to that node's
+      One row per node. The first row's Node Mgmt IP is used to create a new
+      cluster; the other rows' Node Mgmt IPs are applied when those nodes join.
+      The node name is entered once and applies to that node's
       service processor, data ports, interface group, and one aggregate. The
       number of rows is also used to confirm the expected node count when
       creating a new cluster. Data
@@ -664,7 +658,7 @@ inputs:
 grains:
   create_ontap_cluster:
     kind: ansible
-    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" and .inputs.cluster_name != "" and .inputs.node1_ip != "" and .inputs.cluster_mgmt_netmask != "" and .inputs.cluster_mgmt_gateway != "" and .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
+    when: '{% if .inputs.ontap_hostname != "" and .inputs.ontap_username != "" and .inputs.ontap_password != "" and .inputs.cluster_name != "" and .inputs.cluster_mgmt_netmask != "" and .inputs.cluster_mgmt_gateway != "" and .inputs.node_specs != "" and .inputs.node_specs != "[]" %}true{% else %}false{% endif %}'
     spec:
       source:
         store: Stack-Automation-NetApp
@@ -676,7 +670,6 @@ grains:
         - ontap_username: '{{ .inputs.ontap_username }}'
         - ontap_password: '{{ .inputs.ontap_password }}'
         - cluster_name: '{{ .inputs.cluster_name }}'
-        - node1_ip: '{{ .inputs.node1_ip }}'
         - cluster_mgmt_netmask: '{{ .inputs.cluster_mgmt_netmask }}'
         - cluster_mgmt_gateway: '{{ .inputs.cluster_mgmt_gateway }}'
         - node_specs: '{{ .inputs.node_specs }}'
