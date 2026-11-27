@@ -134,7 +134,21 @@
         https: true
         validate_certs: false
       register: cluster_create
+      no_log: true
+      failed_when: false
       when: not (cluster_exists | bool)
+
+    - name: Fail if the cluster create request failed
+      ansible.builtin.fail:
+        msg: >-
+          Cluster create request to {{ node1_ip }} failed with status
+          {{ cluster_create.status_code | default('unknown') }}:
+          {{ cluster_create.response.error.message | default(cluster_create.msg | default('no details available')) }}
+      when:
+        - not (cluster_exists | bool)
+        - >-
+          cluster_create.response.error is defined
+          or (cluster_create.status_code | default(0) | int) >= 300
 
     - name: Extract the cluster create job UUID
       ansible.builtin.set_fact:
